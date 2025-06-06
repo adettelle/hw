@@ -1,4 +1,4 @@
-module github.com/adettelle/hw02_unpack_string
+module github.com/adettelle/hw/hw02_unpack_string
 
 go 1.23
 
