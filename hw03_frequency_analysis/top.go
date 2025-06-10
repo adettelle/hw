@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var re *regexp.Regexp = regexp.MustCompile(`^["',.!?:;]+|["',.!?:;]+$`)
+var re = regexp.MustCompile(`^["',.!?:;]+|["',.!?:;]+$`)
 
 type keyValue struct {
 	Key   string
