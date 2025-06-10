@@ -7,7 +7,7 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -79,4 +79,34 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestLessTen(t *testing.T) {
+	tests := []struct {
+		s        string
+		expected []string
+		err      error
+	}{
+		{
+			"cat, dog cat cat. dog catdog Cat dog,cat", // cat 4; catdog 1; dog 2; dog,cat 1;
+			[]string{"cat", "dog", "catdog", "dog,cat"},
+			nil,
+		},
+		{
+			"- ---- нога 'нога' ногу нога' --- какой-то какойто",
+			// ---- 1; нога 3; ногу 1; --- 1; какой-то 1; какойто 1
+			[]string{"нога", "---", "----", "какой-то", "какойто", "ногу"},
+			nil,
+		},
+		{
+			"cat and dog, one dog,two cats and one man",
+			// cat 1; and 2; dog 1; one 2; dog,two 1; cats 1; man 1
+			[]string{"and", "one", "cat", "cats", "dog", "dog,two", "man"},
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		require.Equal(t, tt.expected, Top10(tt.s))
+	}
 }
