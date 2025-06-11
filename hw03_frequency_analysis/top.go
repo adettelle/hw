@@ -28,12 +28,7 @@ func Top10(str string) []string {
 		}
 		reWord := re.ReplaceAllString(word, "")
 
-		_, ok := wordFrequencies[reWord]
-		if ok {
-			wordFrequencies[reWord]++
-		} else {
-			wordFrequencies[reWord] = 1
-		}
+		wordFrequencies[reWord]++
 	}
 
 	sortedFrequeencies := getSortedFrequeencies(wordFrequencies, 10)
