@@ -69,6 +69,7 @@ func (list *List) PushBack(v interface{}) *ListItem {
 }
 
 // Удалить элемент.
+// Считатем, что метод вызывается только от существующих в списке элементов.
 func (list *List) Remove(i *ListItem) {
 	if list.head == nil {
 		return
@@ -86,46 +87,32 @@ func (list *List) Remove(i *ListItem) {
 		list.length--
 		return
 	}
-	temp := list.head.Next
 
-	for temp != nil {
-		if temp == i {
-			temp.Prev.Next = temp.Next
-			temp.Next.Prev = temp.Prev.Next
-			list.length--
-			return
-		}
-		temp = temp.Next
-	}
+	i.Prev.Next = i.Next
+	i.Next.Prev = i.Prev
+	list.length--
 }
 
 // Переместить элемент в начало.
+// Считатем, что метод вызывается только от существующих в списке элементов.
 func (list *List) MoveToFront(i *ListItem) {
 	if i == list.head {
 		return
 	}
 
-	temp := list.head.Next // temp - второй элемент в списке
-
-	for temp != nil {
-		if temp == i {
-			temp.Prev.Next = temp.Next
-			if temp.Next != nil {
-				temp.Next.Prev = temp.Prev
-			}
-			if temp == list.tail {
-				list.tail = temp.Prev
-			}
-
-			list.head.Prev = temp
-			temp.Next = list.head
-			list.head = temp
-			temp.Prev = nil
-
-			return
-		}
-		temp = temp.Next
+	i.Prev.Next = i.Next
+	if i.Next != nil {
+		i.Next.Prev = i.Prev
 	}
+
+	if list.tail == i {
+		list.tail = i.Prev
+	}
+
+	i.Next = list.head
+	list.head.Prev = i
+	i.Prev = nil
+	list.head = i
 }
 
 func (list *List) DeleteLinkedList() {

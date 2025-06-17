@@ -4,7 +4,7 @@ import "sync"
 
 type Key string
 
-type IList interface {
+type ListManipulator interface {
 	Len() int
 	Front() *ListItem
 	Back() *ListItem
@@ -17,14 +17,14 @@ type IList interface {
 type LruCache struct {
 	sync.RWMutex
 	capacity int
-	queue    List
+	queue    *List
 	items    map[Key]*ListItem
 }
 
 func NewCache(capacity int) *LruCache {
 	return &LruCache{
 		capacity: capacity,
-		queue:    *NewList(),
+		queue:    NewList(),
 		items:    make(map[Key]*ListItem, capacity),
 	}
 }
@@ -50,10 +50,7 @@ func (c *LruCache) Set(key Key, value interface{}) bool {
 
 	kv := pair{key: key, value: value}
 
-	li := c.queue.PushFront(kv)
-	c.items[key] = li
-
-	if c.queue.length > c.capacity {
+	if c.queue.length == c.capacity {
 		valueTodelete := c.queue.tail
 		c.queue.Remove(valueTodelete)
 
@@ -64,6 +61,9 @@ func (c *LruCache) Set(key Key, value interface{}) bool {
 
 		delete(c.items, val.key)
 	}
+
+	li := c.queue.PushFront(kv)
+	c.items[key] = li
 
 	return false
 }
@@ -89,7 +89,9 @@ func (c *LruCache) Get(key Key) (interface{}, bool) {
 func (c *LruCache) Clear() {
 	c.Lock()
 	defer c.Unlock()
-	c.queue.DeleteLinkedList()
+
+	c.items = map[Key]*ListItem{}
+	c.queue = NewList()
 }
 
 func (c *LruCache) PrintList() {

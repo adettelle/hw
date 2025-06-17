@@ -168,4 +168,10 @@ func TestCacheLogic(t *testing.T) {
 		{key: "k3", value: 33},
 		{key: "k1", value: 1},
 	}, pairs)
+
+	c.Clear()
+	require.Equal(t, 0, c.queue.length)
+	require.Nil(t, c.queue.head)
+	require.Nil(t, c.queue.tail)
+	require.Empty(t, c.items)
 }
