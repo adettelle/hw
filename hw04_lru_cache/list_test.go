@@ -49,3 +49,43 @@ func TestList(t *testing.T) {
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
 }
+
+func TestList2(t *testing.T) {
+	doublyLL := NewList()
+
+	li1 := doublyLL.PushFront(1)
+	li2 := doublyLL.PushFront(2)
+	li3 := doublyLL.PushFront(3)
+	li4 := doublyLL.PushBack(4) // 3 2 1 4
+	require.Equal(t, 4, doublyLL.length)
+
+	liFront := doublyLL.Front()
+	require.Equal(t, 3, liFront.Value)
+
+	liBack := doublyLL.Back()
+	require.Equal(t, 4, liBack.Value)
+
+	doublyLL.Remove(li3) // 2 1 4
+	require.Equal(t, 3, doublyLL.length)
+	liFront = doublyLL.Front()
+	require.Equal(t, 2, liFront.Value)
+
+	doublyLL.MoveToFront(li4) // 4 2 1
+	liFront = doublyLL.Front()
+	require.Equal(t, 4, liFront.Value)
+
+	doublyLL.printList()
+
+	doublyLL.DeleteLinkedList()
+	require.Equal(t, 0, doublyLL.length)
+
+	require.Nil(t, doublyLL.head)
+	require.Nil(t, doublyLL.tail)
+
+	require.Nil(t, li1.Next)
+	require.Nil(t, li1.Prev)
+	require.Nil(t, li2.Next)
+	require.Nil(t, li2.Prev)
+	require.Nil(t, li4.Next)
+	require.Nil(t, li4.Prev)
+}
