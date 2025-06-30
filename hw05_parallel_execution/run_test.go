@@ -68,3 +68,46 @@ func TestRun(t *testing.T) {
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 }
+
+func TestMaxErrorsCount(t *testing.T) {
+	tasksCount := 50
+	tasks := make([]Task, 0, tasksCount)
+
+	tests := []struct {
+		name           string
+		workersCount   int
+		maxErrorsCount int
+		want           int
+	}{
+		{
+			name:           "zero maxErrorsCount",
+			workersCount:   5,
+			maxErrorsCount: 0,
+		},
+		{
+			name:           "negative maxErrorsCount",
+			workersCount:   5,
+			maxErrorsCount: -1,
+		},
+	}
+
+	for _, test := range tests {
+		var runTasksCount int32
+
+		for i := range tasksCount {
+			tasks = append(tasks, func() error {
+				atomic.AddInt32(&runTasksCount, 1)
+				if i%2 == 0 {
+					return fmt.Errorf("error in task")
+				}
+				return nil
+			})
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			err := Run(tasks, test.workersCount, test.maxErrorsCount)
+			require.NoError(t, err)
+			require.Equal(t, int32(tasksCount), runTasksCount, "not all tasks were completed")
+		})
+	}
+}
