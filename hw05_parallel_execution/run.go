@@ -41,19 +41,11 @@ func Run(tasks []Task, workersCount, maxErrorsCount int) error {
 	errCount := 0
 	var err error
 
-	ignoreErrors := maxErrorsCount <= 0
+	stopOnErrors := maxErrorsCount > 0
 
-	for {
-		_, ok := <-errChan
-		if !ok {
-			break
-		}
-		if ignoreErrors {
-			continue
-		}
+	for range errChan {
 		errCount++
-
-		if errCount >= maxErrorsCount {
+		if errCount >= maxErrorsCount && stopOnErrors {
 			err = ErrErrorsLimitExceeded
 			close(stopChan)
 			break
@@ -64,12 +56,8 @@ func Run(tasks []Task, workersCount, maxErrorsCount int) error {
 	return err
 }
 
-func startWorker(chTask <-chan Task, chStop <-chan struct{}, chErr chan<- error) {
-	for {
-		task, ok := <-chTask
-		if !ok {
-			return
-		}
+func startWorker(taskChan <-chan Task, chStop <-chan struct{}, chErr chan<- error) {
+	for task := range taskChan {
 		err := task()
 		select {
 		case <-chStop:
@@ -83,8 +71,8 @@ func startWorker(chTask <-chan Task, chStop <-chan struct{}, chErr chan<- error)
 	}
 }
 
-func startWorkers(numWorkers int, chTask <-chan Task, chStop <-chan struct{}, chErr chan<- error) {
-	defer close(chErr)
+func startWorkers(numWorkers int, taskChan <-chan Task, stopChan <-chan struct{}, errChan chan<- error) {
+	defer close(errChan)
 
 	wg := sync.WaitGroup{}
 	wg.Add(numWorkers)
@@ -92,7 +80,7 @@ func startWorkers(numWorkers int, chTask <-chan Task, chStop <-chan struct{}, ch
 	for i := 0; i < numWorkers; i++ {
 		go func() {
 			defer wg.Done()
-			startWorker(chTask, chStop, chErr)
+			startWorker(taskChan, stopChan, errChan)
 		}()
 	}
 	wg.Wait()
