@@ -1,5 +1,7 @@
 package hw06pipelineexecution
 
+import "log"
+
 type (
 	In  = <-chan interface{}
 	Out = In
@@ -26,7 +28,8 @@ func createClosableChan(in In, done In) Out {
 		defer func() {
 			close(out)
 
-			for range in {
+			for val := range in {
+				log.Println(val)
 			}
 		}()
 
