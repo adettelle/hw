@@ -11,7 +11,7 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	currentIn := in
+	currentIn := createClosableChan(in, done)
 
 	for _, stage := range stages {
 		wrapped := createClosableChan(currentIn, done)

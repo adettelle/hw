@@ -158,7 +158,6 @@ func TestWithNoDataNoStage(t *testing.T) {
 		go func() {
 			<-time.After(abortDur)
 			close(done)
-			close(in)
 		}()
 
 		result := make([]string, 0, 10)
