@@ -35,7 +35,7 @@ func main() {
 
 	err := Copy(from, to, offset, limit, progressCh, completionCh, chunkS)
 	if err != nil {
-		log.Fatal(err)
+		log.Default().Println("copy failed:", err)
 	}
 
 	wg.Wait()
