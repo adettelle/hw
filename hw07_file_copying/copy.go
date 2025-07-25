@@ -13,7 +13,6 @@ var (
 	ErrUnsupportedFile            = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize      = errors.New("offset exceeds file size")
 	ErrSamePaths                  = errors.New("paths from and to are the same")
-	ErrFileAlredyExists           = errors.New("file alredy exists")
 	ErrNoSuchFile                 = errors.New("there is no source file")
 	ErrIrregularFile              = errors.New("file with unknown size")
 	ErrDestinationDirDoesnotExist = errors.New("destination directory does not exist")
@@ -22,6 +21,10 @@ var (
 func Copy(fromPath, toPath string, offset, limit int64,
 	progressCh chan<- int, completionCh chan<- any, chunkSize int,
 ) error {
+	defer func() {
+		completionCh <- struct{}{}
+	}()
+
 	if fromPath == toPath {
 		return ErrSamePaths
 	}
@@ -33,13 +36,6 @@ func Copy(fromPath, toPath string, offset, limit int64,
 
 	if !sourceFi.Mode().IsRegular() {
 		return ErrUnsupportedFile
-	}
-
-	_, err = os.Stat(toPath)
-	if err == nil {
-		return ErrFileAlredyExists
-	} else if !os.IsNotExist(err) {
-		return err
 	}
 
 	_, err = os.Stat(path.Dir(toPath))
@@ -97,7 +93,7 @@ func Copy(fromPath, toPath string, offset, limit int64,
 		}
 	}
 
-	completionCh <- struct{}{}
+	// completionCh <- struct{}{}
 	return nil
 }
 

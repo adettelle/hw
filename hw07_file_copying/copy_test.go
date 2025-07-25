@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"sync"
@@ -35,9 +34,8 @@ func TestCopyEntireFileZeroOffset(t *testing.T) {
 		limit  int64
 		offset int64
 	}{
-		name: "copy_entire_file",
-		from: inPath,
-		// to:     outPath,
+		name:   "copy_entire_file",
+		from:   inPath,
 		limit:  0,
 		offset: 0,
 	}
@@ -48,12 +46,11 @@ func TestCopyEntireFileZeroOffset(t *testing.T) {
 	progress(progressCh, completionCh, &wg)
 
 	err := Copy(tCase.from, toFile, tCase.offset, tCase.limit, progressCh, completionCh, chunkSize) // tCase.to
-	fmt.Println("INPATH:", inPath)
 	require.NoError(t, err)
 
 	incomingFileInfo, err := os.Stat(tCase.from)
 	require.NoError(t, err)
-	outcomigFileInfo, err := os.Stat(toFile) // tCase.to
+	outcomigFileInfo, err := os.Stat(toFile)
 	require.NoError(t, err)
 
 	require.Equal(t, outcomigFileInfo.Size(), incomingFileInfo.Size())
@@ -104,15 +101,6 @@ func TestCopyWithOffset(t *testing.T) {
 			chunkSize: 512 * 1024,
 			expected:  "1234567890\nabcdefghijklmnopqrstuvwxyz",
 		},
-		// {
-		// 	name:       "copy_with_enormous_chunkSize",
-		// 	from:       "/dev/urandom",
-		// 	to:         outDir,
-		// 	limit:      0,
-		// 	offset:     0,
-		// 	chunkSize:  512 * 1024,
-		// 	shouldFail: true,
-		// },
 	}
 
 	for _, tCase := range tests {
@@ -131,14 +119,11 @@ func TestCopyWithOffset(t *testing.T) {
 			progress(progressCh, completionCh, &wg)
 
 			err := Copy(tCase.from, toFile, tCase.offset, tCase.limit, progressCh, completionCh, tCase.chunkSize) // tCase.to
-			// log.Fatal(err.Error())
-			// wg.Wait()
 			if tCase.shouldFail {
 				require.Error(t, err)
 			} else {
-				// wg.Wait()
 				require.NoError(t, err)
-				outFileContent, err := os.ReadFile(toFile) // tCase.to
+				outFileContent, err := os.ReadFile(toFile)
 				require.NoError(t, err)
 
 				require.Equal(t, tCase.expected, string(outFileContent))
@@ -149,7 +134,6 @@ func TestCopyWithOffset(t *testing.T) {
 }
 
 type test struct {
-	// name   string
 	from   string
 	to     string
 	limit  int64
@@ -163,8 +147,9 @@ func TestCopyToNonexistentDir(t *testing.T) {
 	completionCh := make(chan any)
 	defer close(completionCh)
 
+	wg := sync.WaitGroup{}
+
 	tCase := test{
-		// name:   "copy_to_unexisting_dir",
 		from:   inPath,
 		to:     "../non-existentdir/output.txt",
 		limit:  0,
@@ -174,8 +159,12 @@ func TestCopyToNonexistentDir(t *testing.T) {
 	_, err := os.Stat(tCase.to)
 	require.True(t, os.IsNotExist(err))
 
-	err = Copy(tCase.from, tCase.to, tCase.offset, tCase.limit, progressCh, completionCh, chunkSize) // tCase.to
+	progress(progressCh, completionCh, &wg)
+
+	err = Copy(tCase.from, tCase.to, tCase.offset, tCase.limit, progressCh, completionCh, chunkSize)
 	require.Error(t, err, ErrDestinationDirDoesnotExist)
+
+	wg.Wait()
 }
 
 func createAndCleanOutDir(t *testing.T) string {
@@ -198,11 +187,7 @@ func progress(progressCh <-chan int, completionCh <-chan any, wg *sync.WaitGroup
 		for {
 			select {
 			case <-progressCh:
-				fmt.Println("11111")
 			case <-completionCh:
-				fmt.Println("22222")
-
-				// wg.Done()
 				return
 			}
 		}
