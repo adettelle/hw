@@ -101,6 +101,14 @@ func TestCopyWithOffset(t *testing.T) {
 			chunkSize: 512 * 1024,
 			expected:  "1234567890\nabcdefghijklmnopqrstuvwxyz",
 		},
+		{
+			name:       "copy_with_unknown_length",
+			from:       "/dev/urandom",
+			limit:      0,
+			offset:     0,
+			chunkSize:  512 * 1024,
+			shouldFail: true,
+		},
 	}
 
 	for _, tCase := range tests {

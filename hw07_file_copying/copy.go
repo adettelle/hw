@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"math"
@@ -29,6 +28,18 @@ func Copy(fromPath, toPath string, offset, limit int64,
 		return ErrSamePaths
 	}
 
+	sourceFile, err := os.Open(fromPath)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	// Move to specific position
+	_, err = sourceFile.Seek(offset, io.SeekStart)
+	if err != nil {
+		return err
+	}
+
 	sourceFi, err := os.Stat(fromPath) // testing whether the file that will be copied exists
 	if err != nil {
 		return ErrNoSuchFile
@@ -49,11 +60,6 @@ func Copy(fromPath, toPath string, offset, limit int64,
 	// offset больше, чем размер файла - невалидная ситуация
 	if offset > sourceFi.Size() {
 		return ErrOffsetExceedsFileSize
-	}
-
-	file, err := readSpecificBytes(fromPath, offset, int(limit))
-	if err != nil {
-		return err
 	}
 
 	destination, err := os.Create(toPath)
@@ -79,7 +85,7 @@ func Copy(fromPath, toPath string, offset, limit int64,
 		if i == numChunks-1 {
 			chunkSize = lastChunkSize
 		}
-		_, err := io.CopyN(destination, file, int64(chunkSize))
+		_, err := io.CopyN(destination, sourceFile, int64(chunkSize))
 
 		percentage := 100 * (i + 1) / numChunks
 
@@ -93,38 +99,5 @@ func Copy(fromPath, toPath string, offset, limit int64,
 		}
 	}
 
-	// completionCh <- struct{}{}
 	return nil
-}
-
-func readSpecificBytes(filename string, offset int64, limit int) (*bytes.Buffer, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	fi, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	// Move to specific position
-	_, err = file.Seek(offset, io.SeekStart)
-	if err != nil {
-		return nil, err
-	}
-
-	if limit == 0 {
-		limit = int(fi.Size() - offset)
-	}
-
-	readBytes := make([]byte, limit)
-
-	_, err = file.Read(readBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes.NewBuffer(readBytes), nil
 }
