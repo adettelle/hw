@@ -31,7 +31,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 		}
 	}
 
-	command := exec.Command(cmd[0], args...)
+	command := exec.Command(cmd[0], args...) //nolint
 
 	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
