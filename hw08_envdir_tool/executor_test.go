@@ -1,7 +1,12 @@
 package main
 
-import "testing"
+import (
+	"testing"
 
-func TestRunCmd(t *testing.T) {
-	// Place your code here
+	"github.com/stretchr/testify/require"
+)
+
+func TestRunCmdNegative(t *testing.T) {
+	resCode := RunCmd([]string{}, Environment{})
+	require.Equal(t, -1, resCode)
 }
