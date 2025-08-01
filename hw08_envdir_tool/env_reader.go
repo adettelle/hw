@@ -83,11 +83,7 @@ func normalize(str string) string {
 		str = ""
 	}
 
-	nullIndex := strings.Index(str, "\x00")
-
-	if nullIndex > -1 {
-		str = str[:nullIndex]
-	}
+	str = strings.ReplaceAll(str, "\x00", "\n")
 
 	return str
 }

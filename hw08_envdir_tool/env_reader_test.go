@@ -11,7 +11,7 @@ func TestReadDir(t *testing.T) {
 	wantedEnv := Environment{
 		"BAR":   EnvValue{Value: "bar", NeedRemove: false},
 		"EMPTY": EnvValue{Value: "", NeedRemove: false},
-		"FOO":   EnvValue{Value: "   foo", NeedRemove: false},
+		"FOO":   EnvValue{Value: "   foo\nwith new line", NeedRemove: false},
 		"HELLO": EnvValue{Value: "\"hello\"", NeedRemove: false},
 		"UNSET": EnvValue{Value: "", NeedRemove: true},
 	}
@@ -80,7 +80,7 @@ func TestNormalize(t *testing.T) {
 		{
 			name:     "zero byte",
 			data:     "123\x00",
-			expected: "123",
+			expected: "123\n",
 		},
 	}
 
