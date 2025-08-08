@@ -204,6 +204,7 @@ func validateSlice(constraints map[string][]string,
 			if err != nil {
 				validErrs = append(validErrs, ValidationError{Field: fieldName, Err: err})
 			}
+		default:
 		}
 	}
 	if len(validErrs) == 0 {
