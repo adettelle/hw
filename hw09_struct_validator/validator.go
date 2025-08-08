@@ -78,6 +78,7 @@ func Validate(v interface{}) error {
 			if len(validateErrs) != 0 {
 				errs = append(errs, validateErrs...)
 			}
+		default:
 		}
 	}
 
@@ -162,7 +163,8 @@ func validateInt(checkedValue reflect.Value, constraints map[string][]string) er
 }
 
 func validateSlice(constraints map[string][]string,
-	checkedValue reflect.Value, fieldName string) ValidationErrors {
+	checkedValue reflect.Value, fieldName string,
+) ValidationErrors {
 	validErrs := ValidationErrors{}
 	if checkedValue.Len() == 0 {
 		for k, v := range constraints {
@@ -210,9 +212,7 @@ func validateSlice(constraints map[string][]string,
 	return validErrs
 }
 
-var (
-	ErrConditionsRepeat = errors.New("conditions are repeated")
-)
+var ErrConditionsRepeat = errors.New("conditions are repeated")
 
 type ErrValueTooBig struct {
 	expectedMax int
