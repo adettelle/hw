@@ -35,11 +35,9 @@ func Validate(v interface{}) error {
 	val := reflect.ValueOf(v)
 	typeInfo := reflect.TypeOf(v)
 
-	// Пробегаемся по полям структуры
 	for fieldIndex := 0; fieldIndex < val.NumField(); fieldIndex++ {
 		fieldInfo := typeInfo.Field(fieldIndex)
 
-		// проверяем, экспортируемое ли поле
 		if !fieldInfo.IsExported() {
 			continue
 		}
@@ -49,25 +47,22 @@ func Validate(v interface{}) error {
 			continue
 		}
 
-		// Получаем значение поля структуры, напимер, возраст 19
 		checkedValue := val.Field(fieldIndex)
 
-		constraints, err := parseTagFuncs(tag) // ранее tagFuncs
+		constraints, err := parseTagFuncs(tag)
 		if err != nil {
 			errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
 		}
 
-		// проверяем, какое поле int или string (25 - Int)
-		// TODO надо ли проверять float???
-		switch checkedValue.Kind() {
+		switch checkedValue.Kind() { //nolint:exhaustive
 		case reflect.String:
-			err := validateString(checkedValue, constraints) // , validErrs, field
+			err := validateString(checkedValue, constraints)
 			if err != nil {
 				errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
 			}
 
 		case reflect.Int:
-			err := validateInt(checkedValue, constraints) //  checkRestrictionsInt(tFuncs, int(checkedValue.Int()))
+			err := validateInt(checkedValue, constraints)
 			if err != nil {
 				errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
 			}
@@ -192,7 +187,7 @@ func validateSlice(constraints map[string][]string,
 	for fieldIndex := 0; fieldIndex < checkedValue.Len(); fieldIndex++ {
 		valToCheck := checkedValue.Index(fieldIndex)
 
-		switch valToCheck.Kind() {
+		switch valToCheck.Kind() { //nolint:exhaustive
 		case reflect.String:
 			err := validateString(valToCheck, constraints)
 			if err != nil {
@@ -200,7 +195,7 @@ func validateSlice(constraints map[string][]string,
 			}
 		case reflect.Int:
 
-			err := validateInt(valToCheck, constraints) // checkRestrictionsInt(tagFuncs, int(checkedValue.Int()))
+			err := validateInt(valToCheck, constraints)
 			if err != nil {
 				validErrs = append(validErrs, ValidationError{Field: fieldName, Err: err})
 			}
