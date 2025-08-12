@@ -25,7 +25,7 @@ type (
 	Student struct {
 		Name     string
 		Age      int   `validate:"max:80"`
-		AvRating []int `validate:"len:6|min:3|max:5"`
+		AvRating []int `validate:"min:3|max:5"`
 	}
 
 	App struct {
@@ -41,6 +41,16 @@ type (
 	Response struct {
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
+	}
+
+	Cat struct {
+		Name string `validate:"len:5|min:3"`
+		Age  int
+	}
+
+	Dog struct {
+		Name    string
+		Rewards []int `validate:"max:10|regexp:\\d+"`
 	}
 )
 
@@ -179,18 +189,6 @@ func TestValidateNegative(t *testing.T) {
 					Field: "Age",
 					Err:   NewErrValueTooBig(80),
 				},
-				ValidationError{
-					Field: "AvRating",
-					Err:   NewErrCheckedValueLen(6),
-				},
-				ValidationError{
-					Field: "AvRating",
-					Err:   NewErrValueTooSmall(3),
-				},
-				ValidationError{
-					Field: "AvRating",
-					Err:   NewErrValueTooBig(5),
-				},
 			},
 		},
 		{
@@ -272,6 +270,40 @@ func TestValidateNegative(t *testing.T) {
 			err := Validate(tt.in)
 			require.Error(t, err)
 			require.Equal(t, tt.expectedErr.Error(), err.Error())
+		})
+	}
+}
+
+func TestNegative(t *testing.T) {
+	tests := []struct {
+		in          interface{}
+		expectedErr error
+	}{
+		{
+			in: Cat{
+				Name: "Kitty",
+				Age:  5,
+			},
+			expectedErr: ErrWrongConstraint,
+		},
+		{
+			in: Dog{
+				Name:    "Snoopy",
+				Rewards: []int{10, 9, 8, 7},
+			},
+			expectedErr: ErrWrongConstraint,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			err := Validate(tt.in)
+
+			require.Error(t, err)
+			require.Equal(t, tt.expectedErr, err)
 		})
 	}
 }

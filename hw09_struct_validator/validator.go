@@ -30,6 +30,25 @@ func (v ValidationErrors) Error() string {
 	return strings.Join(x, "; ")
 }
 
+var allowedConstraints = map[reflect.Kind]map[string]bool{
+	reflect.String: {"len": true, "regexp": true, "in": true},
+	reflect.Int:    {"min": true, "max": true, "in": true},
+}
+
+func checkAllowedConstraints(constraints map[string][]string, kind reflect.Kind) error {
+	kindConstraints, ok := allowedConstraints[kind]
+	if !ok {
+		return nil
+	}
+
+	for constraintName := range constraints {
+		if _, ok := kindConstraints[constraintName]; !ok {
+			return ErrWrongConstraint
+		}
+	}
+	return nil
+}
+
 func Validate(v interface{}) error {
 	errs := ValidationErrors{}
 	val := reflect.ValueOf(v)
@@ -56,12 +75,18 @@ func Validate(v interface{}) error {
 
 		switch checkedValue.Kind() { //nolint:exhaustive
 		case reflect.String:
+			if err := checkAllowedConstraints(constraints, reflect.String); err != nil {
+				return ErrWrongConstraint
+			}
 			err := validateString(checkedValue, constraints)
 			if err != nil {
 				errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
 			}
 
 		case reflect.Int:
+			if err := checkAllowedConstraints(constraints, reflect.Int); err != nil {
+				return ErrWrongConstraint
+			}
 			err := validateInt(checkedValue, constraints)
 			if err != nil {
 				errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
@@ -70,13 +95,18 @@ func Validate(v interface{}) error {
 		case reflect.Slice:
 			data := checkedValue.Slice(0, checkedValue.Len())
 			validateErrs := validateSlice(constraints, data, fieldInfo.Name)
-			if len(validateErrs) != 0 {
-				errs = append(errs, validateErrs...)
+			if validateErrs == nil {
+				continue
+			}
+			var e ValidationErrors
+			if errors.As(validateErrs, &e) {
+				errs = append(errs, e...)
+			} else {
+				return validateErrs
 			}
 		default:
 		}
 	}
-
 	if len(errs) > 0 {
 		return errs
 	}
@@ -85,7 +115,6 @@ func Validate(v interface{}) error {
 
 func validateString(checkedValue reflect.Value, constraints map[string][]string) error {
 	for k, v := range constraints {
-		fmt.Println("K AND V", k, v)
 		switch k {
 		case "len":
 			value, err := strconv.Atoi(v[0])
@@ -159,29 +188,10 @@ func validateInt(checkedValue reflect.Value, constraints map[string][]string) er
 
 func validateSlice(constraints map[string][]string,
 	checkedValue reflect.Value, fieldName string,
-) ValidationErrors {
+) error {
 	validErrs := ValidationErrors{}
 	if checkedValue.Len() == 0 {
-		for k, v := range constraints {
-			num, err := strconv.Atoi(v[0])
-			if err != nil {
-				return ValidationErrors{ValidationError{Err: err}}
-			}
-			switch k {
-			case "len":
-				err = NewErrCheckedValueLen(num)
-				ve := ValidationError{Field: fieldName, Err: err}
-				validErrs = append(validErrs, ve)
-			case "min":
-				err := NewErrValueTooSmall(num)
-				ve := ValidationError{Field: fieldName, Err: err}
-				validErrs = append(validErrs, ve)
-			case "max":
-				err := NewErrValueTooBig(num)
-				ve := ValidationError{Field: fieldName, Err: err}
-				validErrs = append(validErrs, ve)
-			}
-		}
+		return nil
 	}
 
 	for fieldIndex := 0; fieldIndex < checkedValue.Len(); fieldIndex++ {
@@ -189,12 +199,17 @@ func validateSlice(constraints map[string][]string,
 
 		switch valToCheck.Kind() { //nolint:exhaustive
 		case reflect.String:
+			if err := checkAllowedConstraints(constraints, reflect.String); err != nil {
+				return ErrWrongConstraint
+			}
 			err := validateString(valToCheck, constraints)
 			if err != nil {
 				validErrs = append(validErrs, ValidationError{Field: fieldName, Err: err})
 			}
 		case reflect.Int:
-
+			if err := checkAllowedConstraints(constraints, reflect.Int); err != nil {
+				return ErrWrongConstraint
+			}
 			err := validateInt(valToCheck, constraints)
 			if err != nil {
 				validErrs = append(validErrs, ValidationError{Field: fieldName, Err: err})
@@ -208,7 +223,10 @@ func validateSlice(constraints map[string][]string,
 	return validErrs
 }
 
-var ErrConditionsRepeat = errors.New("conditions are repeated")
+var (
+	ErrConditionsRepeat = errors.New("conditions are repeated")
+	ErrWrongConstraint  = errors.New("wrong constraint")
+)
 
 type ErrValueTooBig struct {
 	expectedMax int
