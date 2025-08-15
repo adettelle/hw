@@ -3,6 +3,8 @@ package hw09structvalidator
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -312,33 +314,41 @@ func TestArrangeTagFuncs(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected map[string][]string
+		elemType reflect.Type
+		expected []FieldValidator
 	}{
 		{
 			name:     "check one condition",
 			input:    "len:36",
-			expected: map[string][]string{"len": {"36"}},
+			elemType: reflect.TypeOf(""),
+			expected: []FieldValidator{&LenValidator{Len: 36}},
 		},
 		{
 			name:     "check two conditions",
 			input:    "min:18|max:50",
-			expected: map[string][]string{"min": {"18"}, "max": {"50"}},
+			elemType: reflect.TypeOf(int(1)),
+			expected: []FieldValidator{
+				&MinValidator{Min: 18},
+				&MaxValidator{Max: 50},
+			},
 		},
 		{
 			name:     "condition with backslash",
 			input:    "regexp:^\\w+@\\w+\\.\\w+$",
-			expected: map[string][]string{"regexp": {"^\\w+@\\w+\\.\\w+$"}},
+			elemType: reflect.TypeOf(""),
+			expected: []FieldValidator{&RegexpValidator{Re: regexp.MustCompile(`^\w+@\w+\.\w+$`)}},
 		},
 		{
 			name:     "condition with slice in value",
 			input:    "in:admin,stuff",
-			expected: map[string][]string{"in": {"admin", "stuff"}},
+			elemType: reflect.TypeOf(""),
+			expected: []FieldValidator{&InStrValidator{Elems: []string{"admin", "stuff"}}},
 		},
 	}
 
 	for _, tCase := range tests {
 		t.Run(tCase.name, func(t *testing.T) {
-			result, err := parseTagFuncs(tCase.input)
+			result, err := parseTagFuncs(tCase.input, tCase.elemType)
 			require.NoError(t, err)
 			require.Equal(t, tCase.expected, result)
 		})

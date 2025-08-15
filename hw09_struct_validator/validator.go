@@ -30,25 +30,6 @@ func (v ValidationErrors) Error() string {
 	return strings.Join(x, "; ")
 }
 
-var allowedConstraints = map[reflect.Kind]map[string]bool{
-	reflect.String: {"len": true, "regexp": true, "in": true},
-	reflect.Int:    {"min": true, "max": true, "in": true},
-}
-
-func checkAllowedConstraints(constraints map[string][]string, kind reflect.Kind) error {
-	kindConstraints, ok := allowedConstraints[kind]
-	if !ok {
-		return nil
-	}
-
-	for constraintName := range constraints {
-		if _, ok := kindConstraints[constraintName]; !ok {
-			return ErrWrongConstraint
-		}
-	}
-	return nil
-}
-
 func Validate(v interface{}) error {
 	errs := ValidationErrors{}
 	val := reflect.ValueOf(v)
@@ -68,159 +49,37 @@ func Validate(v interface{}) error {
 
 		checkedValue := val.Field(fieldIndex)
 
-		constraints, err := parseTagFuncs(tag)
+		constraints, err := parseTagFuncs(tag, fieldInfo.Type)
 		if err != nil {
-			errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
+			return err // parse error
+		}
+		if len(constraints) == 0 {
+			continue
 		}
 
-		switch checkedValue.Kind() { //nolint:exhaustive
-		case reflect.String:
-			if err := checkAllowedConstraints(constraints, reflect.String); err != nil {
-				return ErrWrongConstraint
+		if checkedValue.Kind() == reflect.Slice {
+			for fieldIndex := 0; fieldIndex < checkedValue.Len(); fieldIndex++ {
+				valToCheck := checkedValue.Index(fieldIndex)
+				for _, constraint := range constraints {
+					err := constraint.validateValue(valToCheck)
+					if err != nil {
+						errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
+					}
+				}
 			}
-			err := validateString(checkedValue, constraints)
-			if err != nil {
-				errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
+		} else {
+			for _, constraint := range constraints {
+				err := constraint.validateValue(checkedValue)
+				if err != nil {
+					errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
+				}
 			}
-
-		case reflect.Int:
-			if err := checkAllowedConstraints(constraints, reflect.Int); err != nil {
-				return ErrWrongConstraint
-			}
-			err := validateInt(checkedValue, constraints)
-			if err != nil {
-				errs = append(errs, ValidationError{Field: fieldInfo.Name, Err: err})
-			}
-
-		case reflect.Slice:
-			data := checkedValue.Slice(0, checkedValue.Len())
-			validateErrs := validateSlice(constraints, data, fieldInfo.Name)
-			if validateErrs == nil {
-				continue
-			}
-			var e ValidationErrors
-			if errors.As(validateErrs, &e) {
-				errs = append(errs, e...)
-			} else {
-				return validateErrs
-			}
-		default:
 		}
 	}
 	if len(errs) > 0 {
 		return errs
 	}
 	return nil
-}
-
-func validateString(checkedValue reflect.Value, constraints map[string][]string) error {
-	for k, v := range constraints {
-		switch k {
-		case "len":
-			value, err := strconv.Atoi(v[0])
-			if err != nil {
-				return err
-			}
-			if checkedValue.Len() != value {
-				return NewErrCheckedValueLen(value)
-			}
-		case "regexp":
-			re, err := regexp.Compile(v[0])
-			if err != nil {
-				return err
-			}
-			ok := re.MatchString(checkedValue.String())
-			if !ok {
-				return NewErrMatch(v[0])
-			}
-		case "in":
-			in := false
-			for _, word := range v {
-				if checkedValue.String() == word {
-					in = true
-				}
-			}
-			if !in {
-				return NewErrNotInRange(v)
-			}
-		}
-	}
-	return nil
-}
-
-func validateInt(checkedValue reflect.Value, constraints map[string][]string) error {
-	for k, v := range constraints {
-		switch k {
-		case "min":
-			minValue, err := strconv.Atoi(v[0])
-			if err != nil {
-				return err
-			}
-			if int(checkedValue.Int()) < minValue {
-				return NewErrValueTooSmall(minValue)
-			}
-		case "max":
-			maxValue, err := strconv.Atoi(v[0])
-			if err != nil {
-				return err
-			}
-			if int(checkedValue.Int()) > maxValue {
-				return NewErrValueTooBig(maxValue)
-			}
-		case "in":
-			found := false
-			for _, val := range v {
-				num, err := strconv.Atoi(val)
-				if err != nil {
-					return err
-				}
-				if num == int(checkedValue.Int()) {
-					found = true
-				}
-			}
-			if !found {
-				return NewErrNotInRange(v)
-			}
-		}
-	}
-	return nil
-}
-
-func validateSlice(constraints map[string][]string,
-	checkedValue reflect.Value, fieldName string,
-) error {
-	validErrs := ValidationErrors{}
-	if checkedValue.Len() == 0 {
-		return nil
-	}
-
-	for fieldIndex := 0; fieldIndex < checkedValue.Len(); fieldIndex++ {
-		valToCheck := checkedValue.Index(fieldIndex)
-
-		switch valToCheck.Kind() { //nolint:exhaustive
-		case reflect.String:
-			if err := checkAllowedConstraints(constraints, reflect.String); err != nil {
-				return ErrWrongConstraint
-			}
-			err := validateString(valToCheck, constraints)
-			if err != nil {
-				validErrs = append(validErrs, ValidationError{Field: fieldName, Err: err})
-			}
-		case reflect.Int:
-			if err := checkAllowedConstraints(constraints, reflect.Int); err != nil {
-				return ErrWrongConstraint
-			}
-			err := validateInt(valToCheck, constraints)
-			if err != nil {
-				validErrs = append(validErrs, ValidationError{Field: fieldName, Err: err})
-			}
-		default:
-		}
-	}
-	if len(validErrs) == 0 {
-		return nil
-	}
-	return validErrs
 }
 
 var (
@@ -264,6 +123,18 @@ func (err *ErrNotInRange) Error() string {
 	return fmt.Sprintf("checkedValue should be in range: %v", err.limit)
 }
 
+type ErrNotInIntRange struct {
+	limit []int
+}
+
+func NewErrNotInIntRange(limit []int) *ErrNotInIntRange {
+	return &ErrNotInIntRange{limit: limit}
+}
+
+func (err *ErrNotInIntRange) Error() string {
+	return fmt.Sprintf("checkedValue should be in range: %v", err.limit)
+}
+
 type ErrMatch struct {
 	re string
 }
@@ -288,18 +159,195 @@ func (e *ErrCheckedValueLen) Error() string {
 	return fmt.Sprintf("wrong length of checkedValue, %v", e.length)
 }
 
-func parseTagFuncs(tag string) (map[string][]string, error) {
-	funcsMap := map[string][]string{}
-	funcs := strings.Split(tag, "|")
+func parseTagFuncs(tag string, rt reflect.Type) ([]FieldValidator, error) {
+	elems := strings.Split(tag, "|") // elems is []string{"min:1", "max:2"}
 
-	for _, val := range funcs {
-		elem := strings.Split(val, ":")
-		_, ok := funcsMap[elem[0]]
-		if ok {
-			return nil, ErrConditionsRepeat
-		}
-		limits := strings.Split(elem[1], ",")
-		funcsMap[elem[0]] = limits
+	fvs := []FieldValidator{}
+	kind := rt.Kind()
+	if kind == reflect.Slice {
+		kind = rt.Elem().Kind()
 	}
-	return funcsMap, nil
+	for _, elem := range elems { // elem is min:1 or max:2
+		var v FieldValidator
+		var err error
+
+		funcAndVal := strings.Split(elem, ":")
+		switch funcAndVal[0] {
+		case "max":
+			v, err = NewMaxValidator(funcAndVal[1])
+		case "min":
+			v, err = NewMinValidator(funcAndVal[1])
+		case "in":
+			switch kind { //nolint:exhaustive
+			case reflect.Int:
+				v, err = NewInNumValidator(funcAndVal[1])
+			case reflect.String:
+				v, err = NewInStrValidator(funcAndVal[1])
+			default:
+				return nil, ErrWrongConstraint
+			}
+		case "len":
+			v, err = NewLenValidator(funcAndVal[1])
+		case "regexp":
+			v, err = NewRegexpValidator(funcAndVal[1])
+		default:
+			return nil, ErrWrongConstraint
+		}
+		if err != nil {
+			return nil, err
+		}
+		if !v.acsepts(kind) {
+			return nil, ErrWrongConstraint
+		}
+		fvs = append(fvs, v)
+	}
+	return fvs, nil
+}
+
+type FieldValidator interface {
+	acsepts(reflect.Kind) bool
+	validateValue(reflect.Value) error
+}
+
+type MaxValidator struct {
+	Max int
+}
+
+func NewMaxValidator(s string) (*MaxValidator, error) {
+	maxVal, err := strconv.Atoi(s)
+	if err != nil {
+		return nil, err
+	}
+	return &MaxValidator{Max: maxVal}, nil
+}
+
+func (mv *MaxValidator) acsepts(kind reflect.Kind) bool {
+	return kind == reflect.Int
+}
+
+func (mv *MaxValidator) validateValue(item reflect.Value) error {
+	if int(item.Int()) > mv.Max {
+		return NewErrValueTooBig(mv.Max)
+	}
+	return nil
+}
+
+type MinValidator struct {
+	Min int
+}
+
+func NewMinValidator(s string) (*MinValidator, error) {
+	minVal, err := strconv.Atoi(s)
+	if err != nil {
+		return nil, err
+	}
+	return &MinValidator{Min: minVal}, nil
+}
+
+func (mv *MinValidator) acsepts(kind reflect.Kind) bool {
+	return kind == reflect.Int
+}
+
+func (mv *MinValidator) validateValue(item reflect.Value) error {
+	if int(item.Int()) < mv.Min {
+		return NewErrValueTooSmall(mv.Min)
+	}
+	return nil
+}
+
+type InNumValidator struct {
+	Nums []int
+}
+
+func NewInNumValidator(s string) (*InNumValidator, error) {
+	elems := strings.Split(s, ",")
+	nums := []int{}
+	for _, elem := range elems {
+		n, err := strconv.Atoi(elem)
+		if err != nil {
+			return nil, err
+		}
+		nums = append(nums, n)
+	}
+	return &InNumValidator{Nums: nums}, nil
+}
+
+func (mv *InNumValidator) acsepts(kind reflect.Kind) bool {
+	return kind == reflect.Int
+}
+
+func (mv *InNumValidator) validateValue(item reflect.Value) error {
+	hasElement := slices.Index(mv.Nums, int(item.Int())) > -1
+	if !hasElement {
+		return NewErrNotInIntRange(mv.Nums)
+	}
+	return nil
+}
+
+type InStrValidator struct {
+	Elems []string
+}
+
+func NewInStrValidator(s string) (*InStrValidator, error) {
+	elems := strings.Split(s, ",")
+	return &InStrValidator{Elems: elems}, nil
+}
+
+func (mv *InStrValidator) acsepts(kind reflect.Kind) bool {
+	return kind == reflect.String
+}
+
+func (mv *InStrValidator) validateValue(item reflect.Value) error {
+	hasElement := slices.Index(mv.Elems, item.String()) > -1
+	if !hasElement {
+		return NewErrNotInRange(mv.Elems)
+	}
+	return nil
+}
+
+type LenValidator struct {
+	Len int
+}
+
+func NewLenValidator(s string) (*LenValidator, error) {
+	lenVal, err := strconv.Atoi(s)
+	if err != nil {
+		return nil, err
+	}
+	return &LenValidator{Len: lenVal}, nil
+}
+
+func (lv *LenValidator) acsepts(kind reflect.Kind) bool {
+	return kind == reflect.String
+}
+
+func (lv *LenValidator) validateValue(item reflect.Value) error {
+	if len(item.String()) != lv.Len {
+		return NewErrCheckedValueLen(lv.Len)
+	}
+	return nil
+}
+
+type RegexpValidator struct {
+	Re *regexp.Regexp
+}
+
+func NewRegexpValidator(s string) (*RegexpValidator, error) {
+	re, err := regexp.Compile(s)
+	if err != nil {
+		return nil, err
+	}
+	return &RegexpValidator{Re: re}, nil
+}
+
+func (rv *RegexpValidator) acsepts(kind reflect.Kind) bool {
+	return kind == reflect.String
+}
+
+func (rv *RegexpValidator) validateValue(item reflect.Value) error {
+	ok := rv.Re.MatchString(item.String())
+	if !ok {
+		return NewErrMatch(rv.Re.String())
+	}
+	return nil
 }
