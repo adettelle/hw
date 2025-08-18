@@ -196,7 +196,7 @@ func parseTagFuncs(tag string, rt reflect.Type) ([]FieldValidator, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !v.acsepts(kind) {
+		if !v.accepts(kind) {
 			return nil, ErrWrongConstraint
 		}
 		fvs = append(fvs, v)
@@ -205,7 +205,7 @@ func parseTagFuncs(tag string, rt reflect.Type) ([]FieldValidator, error) {
 }
 
 type FieldValidator interface {
-	acsepts(reflect.Kind) bool
+	accepts(reflect.Kind) bool
 	validateValue(reflect.Value) error
 }
 
@@ -221,7 +221,7 @@ func NewMaxValidator(s string) (*MaxValidator, error) {
 	return &MaxValidator{Max: maxVal}, nil
 }
 
-func (mv *MaxValidator) acsepts(kind reflect.Kind) bool {
+func (mv *MaxValidator) accepts(kind reflect.Kind) bool {
 	return kind == reflect.Int
 }
 
@@ -244,7 +244,7 @@ func NewMinValidator(s string) (*MinValidator, error) {
 	return &MinValidator{Min: minVal}, nil
 }
 
-func (mv *MinValidator) acsepts(kind reflect.Kind) bool {
+func (mv *MinValidator) accepts(kind reflect.Kind) bool {
 	return kind == reflect.Int
 }
 
@@ -272,7 +272,7 @@ func NewInNumValidator(s string) (*InNumValidator, error) {
 	return &InNumValidator{Nums: nums}, nil
 }
 
-func (mv *InNumValidator) acsepts(kind reflect.Kind) bool {
+func (mv *InNumValidator) accepts(kind reflect.Kind) bool {
 	return kind == reflect.Int
 }
 
@@ -293,7 +293,7 @@ func NewInStrValidator(s string) (*InStrValidator, error) {
 	return &InStrValidator{Elems: elems}, nil
 }
 
-func (mv *InStrValidator) acsepts(kind reflect.Kind) bool {
+func (mv *InStrValidator) accepts(kind reflect.Kind) bool {
 	return kind == reflect.String
 }
 
@@ -317,7 +317,7 @@ func NewLenValidator(s string) (*LenValidator, error) {
 	return &LenValidator{Len: lenVal}, nil
 }
 
-func (lv *LenValidator) acsepts(kind reflect.Kind) bool {
+func (lv *LenValidator) accepts(kind reflect.Kind) bool {
 	return kind == reflect.String
 }
 
@@ -340,7 +340,7 @@ func NewRegexpValidator(s string) (*RegexpValidator, error) {
 	return &RegexpValidator{Re: re}, nil
 }
 
-func (rv *RegexpValidator) acsepts(kind reflect.Kind) bool {
+func (rv *RegexpValidator) accepts(kind reflect.Kind) bool {
 	return kind == reflect.String
 }
 
