@@ -19,19 +19,18 @@ func main() {
 	timeout := flag.Duration("timeout", 10*time.Second, "timeout for connection")
 	flag.Parse()
 
-	switch len(os.Args) {
+	switch len(flag.Args()) {
+	case 2:
+		host = flag.Args()[0]
+		port = flag.Args()[1]
 	case 3:
-		host = os.Args[1]
-		port = os.Args[2]
-	case 4:
-		host = os.Args[2]
-		port = os.Args[3]
+		host = flag.Args()[1]
+		port = flag.Args()[2]
 	default:
 		log.Fatal("wrong number of args")
 	}
 
 	address := net.JoinHostPort(host, port)
-
 	client := NewTelnetClient(address, *timeout, os.Stdin, os.Stdout)
 	if err := client.Connect(); err != nil {
 		log.Fatal(err)
