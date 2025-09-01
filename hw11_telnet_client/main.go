@@ -19,15 +19,16 @@ func main() {
 	timeout := flag.Duration("timeout", 10*time.Second, "timeout for connection")
 	flag.Parse()
 
-	switch len(flag.Args()) {
-	case 2:
+	if len(flag.Args()) >= 1 {
 		host = flag.Args()[0]
+	} else {
+		host = "localhost"
+	}
+
+	if len(flag.Args()) >= 2 {
 		port = flag.Args()[1]
-	case 3:
-		host = flag.Args()[1]
-		port = flag.Args()[2]
-	default:
-		log.Fatal("wrong number of args")
+	} else {
+		port = "23"
 	}
 
 	address := net.JoinHostPort(host, port)
