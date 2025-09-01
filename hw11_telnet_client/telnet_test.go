@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,7 +15,11 @@ import (
 
 func TestTelnetClient(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		l, err := net.Listen("tcp", "127.0.0.1:")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		lc := net.ListenConfig{}
+		l, err := lc.Listen(ctx, "tcp", "127.0.0.1:")
 		require.NoError(t, err)
 		defer func() { require.NoError(t, l.Close()) }()
 
@@ -62,4 +68,33 @@ func TestTelnetClient(t *testing.T) {
 
 		wg.Wait()
 	})
+}
+
+func TestConnectError(t *testing.T) {
+	addr := "127.0.0.1:65000"
+	client := NewTelnetClient(addr, 200*time.Millisecond,
+		io.NopCloser(strings.NewReader("")), &bytes.Buffer{})
+
+	err := client.Connect()
+	require.Error(t, err, "expected an error when connecting to a non-existent server")
+}
+
+func TestSendWithoutConnect(t *testing.T) {
+	client := &TClient{}
+	err := client.Send()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not connected")
+}
+
+func TestReceiveWithoutConnect(t *testing.T) {
+	client := &TClient{}
+	err := client.Receive()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not connected")
+}
+
+func TestCloseWithoutConnect(t *testing.T) {
+	client := &TClient{}
+	err := client.Close()
+	require.NoError(t, err)
 }
