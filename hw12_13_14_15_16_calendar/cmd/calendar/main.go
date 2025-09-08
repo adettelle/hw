@@ -2,39 +2,63 @@ package main
 
 import (
 	"context"
-	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/database"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/migrator"
+	internalhttp "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/memory"
+	"go.uber.org/zap"
 )
 
-var configFile string
+// var configFile string
 
-func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
-}
+// func init() {
+// 	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+// }
 
 func main() {
-	flag.Parse()
+	// flag.Parse()
 
-	if flag.Arg(0) == "version" {
-		printVersion()
-		return
+	// if flag.Arg(0) == "version" {
+	// 	printVersion()
+	// 	return
+	// }
+
+	config, err := configs.New(true, "./configs/config.yaml")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	// logg := logger.New(config.Logger.Level)
+	logg, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logg.Sync()
+
+	logg.Info("Hello!")
+
+	connStr := config.DBConnStr()
+
+	migrator.MustApplyMigrations(connStr) // config.DBParams
+
+	db, err := database.Connect(connStr) // config.DBParams
+	if err != nil {
+		log.Fatal(err) // TODO HELP
+	}
+	defer db.Close()
 
 	storage := memorystorage.New()
 	calendar := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar)
+	server := internalhttp.NewServer(config, logg, calendar)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
