@@ -7,7 +7,7 @@ import (
 )
 
 func ReadCfgJSON[T any](path string) (cfg *T, err error) {
-	file, err := os.OpenFile(path, os.O_RDONLY, 0444)
+	file, err := os.OpenFile(path, os.O_RDONLY, 0o444)
 	if err != nil {
 		return nil, err
 	}

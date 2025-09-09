@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs" //nolint:depguard
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/database"
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/migrator"
@@ -24,16 +23,30 @@ import (
 // }
 
 func main() {
+	err := initialize()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initialize() error {
 	// flag.Parse()
 
 	// if flag.Arg(0) == "version" {
 	// 	printVersion()
 	// 	return
 	// }
+	ctx, cancel := signal.NotifyContext(context.Background(),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer cancel()
 
-	config, err := configs.New(true, "./configs/config.yaml")
+	config, err := configs.New(&ctx, true, "./configs/config.yaml")
 	if err != nil {
-		log.Fatal(err)
+		return err
+		// log.Printf("error: %v", err)
+		// cancel()
+		// os.Exit(1)
+		// log.Fatal(err)
 	}
 
 	// logg := logger.New(config.Logger.Level)
@@ -44,6 +57,7 @@ func main() {
 	defer logg.Sync()
 
 	logg.Info("Hello!")
+	printVersion()
 
 	connStr := config.DBConnStr()
 
@@ -51,7 +65,8 @@ func main() {
 
 	db, err := database.Connect(connStr) // config.DBParams
 	if err != nil {
-		log.Fatal(err) // TODO HELP
+		return err
+		// log.Fatal(err) // TODO HELP
 	}
 	defer db.Close()
 
@@ -60,9 +75,9 @@ func main() {
 
 	server := internalhttp.NewServer(config, logg, calendar)
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
-		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
+	// ctx, cancel := signal.NotifyContext(context.Background(),
+	// 	syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	// defer cancel()
 
 	go func() {
 		<-ctx.Done()
@@ -79,7 +94,9 @@ func main() {
 
 	if err := server.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1) //nolint:gocritic
+		return err
+		// cancel()
+		// os.Exit(1) //nolint:gocritic
 	}
+	return nil
 }

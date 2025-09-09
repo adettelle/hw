@@ -23,11 +23,11 @@ type Storage interface { // TODO
 	Notify(day uint) (string, error)
 }
 
-func New(logger Logger, storage Storage) *App {
+func New(_ Logger, _ Storage) *App {
 	return &App{}
 }
 
-func (a *App) CreateEvent(ctx context.Context, id, title string) error {
+func (a *App) CreateEvent(_ context.Context, _ string, _ string) error { // id title
 	// TODO
 	return nil
 	// return a.storage.CreateEvent(storage.Event{ID: id, Title: title})

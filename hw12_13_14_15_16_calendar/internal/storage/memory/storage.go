@@ -37,7 +37,7 @@ type EventToUpdate struct {
 	Notification time.Time     // За сколько времени высылать уведомление, опционально.  TODO HELP
 }
 
-func (s *Storage) Add(ctx context.Context, ec EventToCreate) (string, error) {
+func (s *Storage) Add(_ context.Context, ec EventToCreate) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -155,7 +155,7 @@ func EndOfMonth(date time.Time) time.Time {
 }
 
 // получить уведомление за N дней до события.
-func (s *Storage) Notify(day uint) (string, error) {
+func (s *Storage) Notify(_ uint) (string, error) { // day
 	return "", nil
 }
 

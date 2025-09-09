@@ -117,8 +117,8 @@ func TestStorageDelete(t *testing.T) {
 
 func TestStorageGetEventListing(t *testing.T) {
 	store := New()
-	date1 := time.Date(2025, time.September, 4, 10, 00, 00, 0, time.Local)
-	date2 := time.Date(2025, time.September, 5, 10, 00, 00, 0, time.Local)
+	date1 := time.Date(2025, time.September, 4, 10, 0o0, 0o0, 0, time.Local)
+	date2 := time.Date(2025, time.September, 5, 10, 0o0, 0o0, 0, time.Local)
 
 	eventToCreate1 := EventToCreate{
 		DateStart:    date1,
@@ -137,7 +137,7 @@ func TestStorageGetEventListing(t *testing.T) {
 		Notification: time.Now().AddDate(0, -2, 0),
 	}
 	eventToCreate3 := EventToCreate{
-		DateStart:    time.Date(2025, time.September, 20, 10, 00, 00, 0, time.Local),
+		DateStart:    time.Date(2025, time.September, 20, 10, 0o0, 0o0, 0, time.Local),
 		Title:        "event3",
 		DateEnd:      3,
 		Description:  "description of event 3",

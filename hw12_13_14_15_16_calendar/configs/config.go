@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -26,6 +27,7 @@ const (
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
 	Logger     LoggerConf
+	Context    *context.Context
 	Config     string // путь до json файла конфигурации по умолчанию /config/cfg.json
 	Address    string `json:"address"`
 	DBHost     string `json:"dbhost"`
@@ -33,7 +35,7 @@ type Config struct {
 	DBUser     string `json:"dbuser"`
 	DBPassword string `json:"dbpassword"`
 	DBName     string `json:"dbname"`
-	//DBParams   string `json:"database_dsn"` // TODO HELP
+	// DBParams   string `json:"database_dsn"` // TODO HELP
 }
 
 type LoggerConf struct {
@@ -64,7 +66,7 @@ func InitFlags() *Config {
 		DBUser:     getUser(flagDBUser),
 		DBPassword: getPassword(flagDBPassword),
 		DBName:     getName(flagDBName),
-		//DBParams:   getDBParams(flagDBParams),
+		// DBParams:   getDBParams(flagDBParams),
 	}
 	return &cfg
 }
@@ -73,8 +75,9 @@ func InitFlags() *Config {
 // сначала проверяем флаги и заполняем структуру конфига оттуда;
 // потом проверяем переменные окружения и перезаписываем структуру конфига оттуда;
 // далее проверяем, если есть json файл и дополняем структкуру конфига оттуда.
-func New(ignoreFlags bool, jsonPath string) (*Config, error) {
+func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, error) {
 	var cfg *Config
+	cfg.Context = ctx
 
 	if !ignoreFlags {
 		cfg = InitFlags()
@@ -131,7 +134,7 @@ func New(ignoreFlags bool, jsonPath string) (*Config, error) {
 	// 	cfg.DBParams = defaultDBParams
 	// }
 	ensureAddrFLagIsCorrect(cfg.Address)
-	ensureHostFlagIsCorrect(cfg.DBHost)
+	ensureHostFlagIsCorrect(*cfg.Context, cfg.DBHost)
 	ensurePortFlagIsCorrect(cfg.DBPort)
 
 	return cfg, nil
@@ -183,8 +186,10 @@ func getHost(flagHost *string) string {
 	return *flagHost
 }
 
-func ensureHostFlagIsCorrect(host string) {
-	addrs, err := net.LookupHost(host)
+func ensureHostFlagIsCorrect(ctx context.Context, host string) {
+	resolver := net.Resolver{}
+
+	addrs, err := resolver.LookupHost(ctx, host)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -213,6 +218,7 @@ func getUser(flagDBUser *string) string {
 	}
 	return *flagDBUser
 }
+
 func getPassword(flagDBPassword *string) string {
 	pwd := os.Getenv("DBPASSWORD")
 	if pwd != "" {
@@ -220,6 +226,7 @@ func getPassword(flagDBPassword *string) string {
 	}
 	return *flagDBPassword
 }
+
 func getName(flagDBName *string) string {
 	name := os.Getenv("DBNAME")
 	if name != "" {

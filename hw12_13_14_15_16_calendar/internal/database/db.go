@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"log"
 
-	_ "github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5" // импортируем pgx для регистрации драйвера database/sql
 )
 
 func Connect(dbParams string) (*sql.DB, error) {
