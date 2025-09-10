@@ -105,8 +105,7 @@ const (
 )
 
 // получить список событий на день/неделю/месяц;
-// date - дата; если неделя или месяц - то будет вокруг этой даты
-// TODO HELP надо ли у date проверять время, что оно 00:00:01 ?????????????//
+// date - дата; если неделя или месяц - то будет вокруг этой даты.
 func (s *Storage) GetEventListing(userID string, date time.Time, period string) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

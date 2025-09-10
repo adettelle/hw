@@ -19,7 +19,6 @@ const (
 	defaultDBUser     = "postgres"
 	defaultDBPassword = "123456"
 	defaultDBName     = "calendar"
-	// defaultDBParams = "host=localhost port=9999 user=postgres password=password dbname=calendar sslmode=disable"
 )
 
 // При желании конфигурацию можно вынести в internal/config.
@@ -86,7 +85,7 @@ func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, erro
 		if err != nil {
 			return nil, err
 		}
-		cfg.applyConfigFromJson(cfgFromJSON)
+		cfg.applyConfigFromJSON(cfgFromJSON)
 	}
 	cfg.Context = ctx
 
@@ -99,7 +98,7 @@ func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, erro
 	return cfg, nil
 }
 
-// сначала проверяем флаги и заполняем структуру конфига оттуда;
+// сначала проверяем флаги и заполняем структуру конфига оттуда.
 func newConfigFromFlag(ignoreFlags bool, jsonPath string) *Config {
 	var cfg *Config
 
@@ -111,7 +110,7 @@ func newConfigFromFlag(ignoreFlags bool, jsonPath string) *Config {
 	return cfg
 }
 
-// заполняем структуру конфига из default;
+// заполняем структуру конфига из default.
 func (cfg *Config) applyDefauls() {
 	if cfg.Address == "" {
 		cfg.Address = defaultAddress
@@ -136,27 +135,27 @@ func (cfg *Config) applyDefauls() {
 }
 
 // проверяем, если есть json файл и дополняем структкуру конфига оттуда.
-func (cfg *Config) applyConfigFromJson(cfgFromJson *Config) {
+func (cfg *Config) applyConfigFromJSON(cfgFromJSON *Config) {
 	if cfg.Address == "" {
-		cfg.Address = cfgFromJson.Address
+		cfg.Address = cfgFromJSON.Address
 	}
 	if cfg.DBHost == "" {
-		cfg.DBHost = cfgFromJson.DBHost
+		cfg.DBHost = cfgFromJSON.DBHost
 	}
 	if cfg.DBPort == "" {
-		cfg.DBPort = cfgFromJson.DBPort
+		cfg.DBPort = cfgFromJSON.DBPort
 	}
 	if cfg.DBUser == "" {
-		cfg.DBUser = cfgFromJson.DBUser
+		cfg.DBUser = cfgFromJSON.DBUser
 	}
 	if cfg.DBName == "" {
-		cfg.DBName = cfgFromJson.DBName
+		cfg.DBName = cfgFromJSON.DBName
 	}
 	if cfg.DBPassword == "" {
-		cfg.DBPassword = cfgFromJson.DBPassword
+		cfg.DBPassword = cfgFromJSON.DBPassword
 	}
 	if cfg.Logger == nil {
-		cfg.Logger = cfgFromJson.Logger
+		cfg.Logger = cfgFromJSON.Logger
 	}
 }
 
