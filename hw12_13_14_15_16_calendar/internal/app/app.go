@@ -15,9 +15,9 @@ type Logger interface { // TODO
 }
 
 type Storage interface { // TODO
-	Add(ctx context.Context, event memorystorage.EventToCreate) (string, error) // добавить событие;
-	Update(id string, event memorystorage.EventToUpdate) error                  // обновить событие;
-	Delete(id string) error                                                     // удавить событие;
+	Add(ctx context.Context, event memorystorage.EventCreateParams) (string, error) // добавить событие;
+	Update(id string, event memorystorage.EventUpdateParams) error                  // обновить событие;
+	Delete(id string) error                                                         // удавить событие;
 	// получить список событий на день/неделю/месяц;
 	GetEventListing(userID string, date time.Time, period string) ([]storage.Event, error)
 	Notify(day uint) (string, error)

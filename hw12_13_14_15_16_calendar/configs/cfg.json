@@ -1,0 +1,11 @@
+{
+    "logger": {
+        "level": "ERROR"
+    },
+    "address": "localhost:8080",
+    "dbhost": "localhost",
+    "dbport": "9999",
+    "dbuser": "postgres",
+    "dbpassword": "123456",
+    "dbname": "calendar"
+}

@@ -36,11 +36,12 @@ func initialize() error {
 	// 	printVersion()
 	// 	return
 	// }
-	ctx, cancel := signal.NotifyContext(context.Background(),
+	startCtx := context.Background()
+	ctx, cancel := signal.NotifyContext(startCtx,
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	config, err := configs.New(&ctx, true, "./configs/config.yaml")
+	config, err := configs.New(&startCtx, true, "./configs/config.yaml")
 	if err != nil {
 		return err
 		// log.Printf("error: %v", err)
@@ -57,7 +58,7 @@ func initialize() error {
 	defer logg.Sync()
 
 	logg.Info("Hello!")
-	printVersion()
+	logg.Info(getVersion())
 
 	connStr := config.DBConnStr()
 
@@ -80,20 +81,20 @@ func initialize() error {
 	// defer cancel()
 
 	go func() {
-		<-ctx.Done()
+		<-ctx.Done() // ???
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		ctx, cancel := context.WithTimeout(startCtx, time.Second*3) // context.Background()
 		defer cancel()
 
-		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+		if err := server.Stop(ctx); err != nil { // ????
+			logg.Error("failed to stop http server", zap.Error(err))
 		}
 	}()
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
+	if err := server.Start(startCtx); err != nil { // ctx ????
+		logg.Error("failed to start http server", zap.Error(err))
 		return err
 		// cancel()
 		// os.Exit(1) //nolint:gocritic

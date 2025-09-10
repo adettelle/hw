@@ -20,30 +20,30 @@ func New() *Storage {
 	return &Storage{Events: events}
 }
 
-type EventToCreate struct {
+type EventCreateParams struct {
 	DateStart    time.Time // Дата и время события;
 	Title        string
-	DateEnd      time.Duration // Длительность события (или дата и время окончания);
-	Description  string        // Описание события - длинный текст, опционально;
-	UserID       string        // ID пользователя, владельца события;
-	Notification time.Time     // За сколько времени высылать уведомление, опционально.
+	DateEnd      time.Time // дата и время окончания (Длительность события);
+	Description  string    // Описание события - длинный текст, опционально;
+	UserID       string    // ID пользователя, владельца события;
+	Notification time.Time // За сколько времени высылать уведомление, опционально.
 }
 
-type EventToUpdate struct {
-	Date         time.Time // Дата и время события;
-	Title        string
-	Duration     time.Duration // Длительность события (или дата и время окончания); TODO HELP
-	Description  string        // Описание события - длинный текст, опционально;
-	Notification time.Time     // За сколько времени высылать уведомление, опционально.  TODO HELP
+type EventUpdateParams struct {
+	Date         *time.Time // Дата и время события;
+	Title        *string
+	Duration     *time.Time // Длительность события (или дата и время окончания); TODO HELP
+	Description  *string    // Описание события - длинный текст, опционально;
+	Notification *time.Time // За сколько времени высылать уведомление, опционально.  TODO HELP
 }
 
-func (s *Storage) Add(_ context.Context, ec EventToCreate) (string, error) {
+func (s *Storage) Add(_ context.Context, ec EventCreateParams) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id := uuid.New()
+	id := uuid.New().String()
 	event := storage.Event{
-		ID:           id.String(),
+		ID:           id,
 		Title:        ec.Title,
 		Date:         ec.DateStart,
 		Duration:     ec.DateEnd,
@@ -51,11 +51,11 @@ func (s *Storage) Add(_ context.Context, ec EventToCreate) (string, error) {
 		UserID:       ec.UserID,
 		Notification: ec.Notification,
 	}
-	s.Events[id.String()] = event
-	return id.String(), nil
+	s.Events[id] = event
+	return id, nil
 }
 
-func (s *Storage) Update(id string, event EventToUpdate) error {
+func (s *Storage) Update(id string, event EventUpdateParams) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -65,11 +65,21 @@ func (s *Storage) Update(id string, event EventToUpdate) error {
 	}
 
 	e := s.Events[id]
-	e.Title = event.Title
-	e.Date = event.Date
-	e.Duration = event.Duration
-	e.Description = event.Description
-	e.Notification = event.Notification
+	if event.Title != nil {
+		e.Title = *event.Title
+	}
+	if event.Date != nil {
+		e.Date = *event.Date
+	}
+	if event.Duration != nil {
+		e.Duration = *event.Duration
+	}
+	if event.Description != nil {
+		e.Description = *event.Description
+	}
+	if event.Notification != nil {
+		e.Notification = *event.Notification
+	}
 
 	s.Events[id] = e
 
@@ -110,7 +120,7 @@ func (s *Storage) GetEventListing(userID string, date time.Time, period string) 
 
 	switch period {
 	case day:
-		start = time.Date(date.Year(), date.Month(), date.Day(), 0o0, 0o0, 0o1, 0, time.Local)
+		start = time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 1, 0, time.Local)
 		end = time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 0, time.Local)
 	case week:
 		start = StartOfWeek(date)
@@ -134,7 +144,7 @@ func (s *Storage) GetEventListing(userID string, date time.Time, period string) 
 func StartOfWeek(date time.Time) time.Time {
 	daysSinceSunday := int(date.Weekday())
 	s := date.AddDate(0, 0, -daysSinceSunday+1)
-	startDate := time.Date(s.Year(), s.Month(), s.Day(), 0o0, 0o0, 0o1, 0, time.Local)
+	startDate := time.Date(s.Year(), s.Month(), s.Day(), 0, 0, 1, 0, time.Local)
 	return startDate
 }
 
@@ -159,6 +169,10 @@ func (s *Storage) Notify(_ uint) (string, error) { // day
 	return "", nil
 }
 
-func (s *Storage) Get(id string) storage.Event {
-	return s.Events[id]
+func (s *Storage) GetByID(id string) (storage.Event, error) {
+	event, ok := s.Events[id]
+	if !ok {
+		return storage.Event{}, fmt.Errorf("no evend with id %s", id)
+	}
+	return event, nil
 }
