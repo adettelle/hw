@@ -51,14 +51,12 @@ func MustApplyMigrations(dbParams string) {
 		log.Fatalf("unable to create migration: %v", err)
 	}
 
-	// Ensure the migrator is closed when done
-	defer func() {
-		migrator.Close()
-	}()
-
 	// Apply all migrations; ignore the error if there are no changes
 	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatalf("unable to apply migrations %v", err)
 	}
+
+	migrator.Close()
+
 	log.Println("Migrations applied")
 }

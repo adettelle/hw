@@ -16,12 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// var configFile string
-
-// func init() {
-// 	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
-// }
-
 func main() {
 	err := initialize()
 	if err != nil {
@@ -30,12 +24,6 @@ func main() {
 }
 
 func initialize() error {
-	// flag.Parse()
-
-	// if flag.Arg(0) == "version" {
-	// 	printVersion()
-	// 	return
-	// }
 	startCtx := context.Background()
 	ctx, cancel := signal.NotifyContext(startCtx,
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -44,13 +32,8 @@ func initialize() error {
 	config, err := configs.New(&startCtx, true, "./configs/config.yaml")
 	if err != nil {
 		return err
-		// log.Printf("error: %v", err)
-		// cancel()
-		// os.Exit(1)
-		// log.Fatal(err)
 	}
 
-	// logg := logger.New(config.Logger.Level)
 	logg, err := zap.NewDevelopment()
 	if err != nil {
 		panic("cannot initialize zap")
@@ -62,12 +45,11 @@ func initialize() error {
 
 	connStr := config.DBConnStr()
 
-	migrator.MustApplyMigrations(connStr) // config.DBParams
+	migrator.MustApplyMigrations(connStr)
 
-	db, err := database.Connect(connStr) // config.DBParams
+	db, err := database.Connect(connStr)
 	if err != nil {
 		return err
-		// log.Fatal(err) // TODO HELP
 	}
 	defer db.Close()
 
@@ -76,17 +58,13 @@ func initialize() error {
 
 	server := internalhttp.NewServer(config, logg, calendar)
 
-	// ctx, cancel := signal.NotifyContext(context.Background(),
-	// 	syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	// defer cancel()
-
 	go func() {
-		<-ctx.Done() // ???
+		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(startCtx, time.Second*3) // context.Background()
+		ctx, cancel := context.WithTimeout(startCtx, time.Second*3)
 		defer cancel()
 
-		if err := server.Stop(ctx); err != nil { // ????
+		if err := server.Stop(ctx); err != nil {
 			logg.Error("failed to stop http server", zap.Error(err))
 		}
 	}()
@@ -96,8 +74,6 @@ func initialize() error {
 	if err := server.Start(startCtx); err != nil { // ctx ????
 		logg.Error("failed to start http server", zap.Error(err))
 		return err
-		// cancel()
-		// os.Exit(1) //nolint:gocritic
 	}
 	return nil
 }

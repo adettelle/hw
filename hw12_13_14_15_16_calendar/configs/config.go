@@ -21,7 +21,6 @@ const (
 	defaultDBName     = "calendar"
 )
 
-// При желании конфигурацию можно вынести в internal/config.
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
@@ -34,12 +33,10 @@ type Config struct {
 	DBUser     string `json:"dbuser"`
 	DBPassword string `json:"dbpassword"`
 	DBName     string `json:"dbname"`
-	// DBParams   string `json:"database_dsn"` // TODO HELP
 }
 
 type LoggerConf struct {
 	Level string `json:"level"`
-	// TODO
 }
 
 func InitFlags() *Config {
@@ -51,23 +48,21 @@ func InitFlags() *Config {
 	flagDBUser := flag.String("u", "", "db user")
 	flagDBPassword := flag.String("password", "", "db password")
 	flagDBName := flag.String("n", "", "db name")
-	// flagDBParams := flag.String("d", "", "db connection params")
 
 	flag.Parse()
 
 	cfg := Config{
 		Logger: &LoggerConf{
 			Level: "INFO",
-		}, // TODO
-		Address: getEnvOrDefault("ADDRESS", flagAddr),  // getAddr(flagAddr),
-		Config:  getEnvOrDefault("CONFIG", flagConfig), // getConfig(flagConfig)
+		},
+		Address: getEnvOrDefault("ADDRESS", flagAddr),
+		Config:  getEnvOrDefault("CONFIG", flagConfig),
 
-		DBHost:     getEnvOrDefault("DBHOST", flagDBHost),         // getHost(flagDBHost),
-		DBPort:     getEnvOrDefault("DBPORT", flagDBPort),         // getPort(flagDBPort),
-		DBUser:     getEnvOrDefault("DBUSER", flagDBUser),         // getUser(flagDBUser),
-		DBPassword: getEnvOrDefault("DBPASSWORD", flagDBPassword), // getPassword(flagDBPassword),
-		DBName:     getEnvOrDefault("DBNAME", flagDBName),         // getName(flagDBName),
-		// DBParams:   getDBParams(flagDBParams),
+		DBHost:     getEnvOrDefault("DBHOST", flagDBHost),
+		DBPort:     getEnvOrDefault("DBPORT", flagDBPort),
+		DBUser:     getEnvOrDefault("DBUSER", flagDBUser),
+		DBPassword: getEnvOrDefault("DBPASSWORD", flagDBPassword),
+		DBName:     getEnvOrDefault("DBNAME", flagDBName),
 	}
 	return &cfg
 }
@@ -179,16 +174,6 @@ func ensureAddrFLagIsCorrect(addr string) {
 	}
 }
 
-// func getDBParams(flagDBParams *string) string {
-// 	envDBParams := os.Getenv("DATABASE_DSN")
-
-// 	if envDBParams != "" {
-// 		return envDBParams
-// 	}
-
-// 	return *flagDBParams
-// }
-
 func ensureHostFlagIsCorrect(ctx context.Context, host string) {
 	resolver := net.Resolver{}
 
@@ -214,128 +199,3 @@ func (cfg *Config) DBConnStr() string {
 
 	return dbParams
 }
-
-/*
-func getConfig(flagConfig *string) string {
-	config := os.Getenv("CONFIG")
-	if config != "" {
-		return config
-	}
-	return *flagConfig
-}
-
-func getAddr(flagAddr *string) string {
-	addr := os.Getenv("ADDRESS")
-	if addr != "" {
-		return addr
-	}
-	return *flagAddr
-}
-
-func getHost(flagHost *string) string {
-	host := os.Getenv("DBHOST")
-	if host != "" {
-		return host
-	}
-	return *flagHost
-}
-
-func getPort(flagPort *string) string {
-	port := os.Getenv("DBPORT")
-	if port != "" {
-		return port
-	}
-	return *flagPort
-}
-
-func getUser(flagDBUser *string) string {
-	user := os.Getenv("DBUSER")
-	if user != "" {
-		return user
-	}
-	return *flagDBUser
-}
-
-func getPassword(flagDBPassword *string) string {
-	pwd := os.Getenv("DBPASSWORD")
-	if pwd != "" {
-		return pwd
-	}
-	return *flagDBPassword
-}
-
-func getName(flagDBName *string) string {
-	name := os.Getenv("DBNAME")
-	if name != "" {
-		return name
-	}
-	return *flagDBName
-}
-*/
-
-/*
-func NewOLD(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, error) {
-	var cfg *Config
-
-	if !ignoreFlags {
-		cfg = InitFlags()
-	} else {
-		cfg = &Config{Config: jsonPath}
-	}
-	if cfg.Config != "" {
-		cfgFromJSON, err := helpers.ReadCfgJSON[Config](cfg.Config)
-		if err != nil {
-			return nil, err
-		}
-		if cfg.Address == "" {
-			cfg.Address = cfgFromJSON.Address
-		}
-		if cfg.DBHost == "" {
-			cfg.DBHost = cfgFromJSON.DBHost
-		}
-		if cfg.DBPort == "" {
-			cfg.DBPort = cfgFromJSON.DBPort
-		}
-		if cfg.DBUser == "" {
-			cfg.DBUser = cfgFromJSON.DBUser
-		}
-		if cfg.DBName == "" {
-			cfg.DBName = cfgFromJSON.DBName
-		}
-		if cfg.DBPassword == "" {
-			cfg.DBPassword = cfgFromJSON.DBPassword
-		}
-	}
-
-	if cfg.Address == "" {
-		cfg.Address = defaultAddress
-	}
-
-	if cfg.DBHost == "" {
-		cfg.DBHost = defaultDBHost
-	}
-
-	if cfg.DBPort == "" {
-		cfg.DBPort = defaultDBPort
-	}
-	if cfg.DBUser == "" {
-		cfg.DBUser = defaultDBUser
-	}
-	if cfg.DBName == "" {
-		cfg.DBName = defaultDBName
-	}
-	if cfg.DBPassword == "" {
-		cfg.DBPassword = defaultDBPassword
-	}
-	cfg.Context = ctx
-	// if cfg.DBParams == "" {
-	// 	cfg.DBParams = defaultDBParams
-	// }
-
-	ensureAddrFLagIsCorrect(cfg.Address)
-	ensureHostFlagIsCorrect(*cfg.Context, cfg.DBHost)
-	ensurePortFlagIsCorrect(cfg.DBPort)
-
-	return cfg, nil
-}
-*/

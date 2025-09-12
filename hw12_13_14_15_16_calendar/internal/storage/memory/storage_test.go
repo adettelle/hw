@@ -28,7 +28,7 @@ func TestStorageAdd(t *testing.T) {
 		UserID:       "2",
 		Notification: dateStart.AddDate(0, -2, 0),
 	}
-	ctx := context.Background() // TODO HELP вот так просто сделать здесь контекст или как-то иначе ?????
+	ctx := context.Background()
 
 	id1, err := store.Add(ctx, eventToCreate1)
 	require.NoError(t, err)
@@ -38,7 +38,6 @@ func TestStorageAdd(t *testing.T) {
 	require.Equal(t, len(store.Events), 2)
 	event1, err := store.GetByID(id1)
 	require.NoError(t, err)
-	// require.Equal(t, eventToCreate1, event1)
 
 	require.Equal(t, eventToCreate1.DateStart, event1.Date)
 	require.Equal(t, eventToCreate1.Title, event1.Title)
@@ -49,7 +48,7 @@ func TestStorageAdd(t *testing.T) {
 
 	event2, err := store.GetByID(id2)
 	require.NoError(t, err)
-	// require.Equal(t, eventToCreate2, event2)
+
 	require.Equal(t, eventToCreate2.DateStart, event2.Date)
 	require.Equal(t, eventToCreate2.Title, event2.Title)
 	require.Equal(t, eventToCreate2.DateEnd, event2.Duration)
@@ -79,7 +78,7 @@ func TestStorageUpdate(t *testing.T) {
 		Notification: dateStart.AddDate(0, -2, 0),
 	}
 
-	ctx := context.Background() // TODO HELP
+	ctx := context.Background()
 	_, err := store.Add(ctx, eventToCreate1)
 	require.NoError(t, err)
 	id2, err := store.Add(ctx, eventToCreate2)
@@ -128,7 +127,7 @@ func TestStorageDelete(t *testing.T) {
 		UserID:       "2",
 		Notification: dateStart.AddDate(0, -2, 0),
 	}
-	ctx := context.Background() // TODO HELP
+	ctx := context.Background()
 	id1, err := store.Add(ctx, eventToCreate1)
 	require.NoError(t, err)
 	id2, err := store.Add(ctx, eventToCreate2)

@@ -37,10 +37,6 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	mux.HandleFunc(`/`, mainPage)
 
-	// err := http.ListenAndServe(s.cfg.Config, mux)
-	// if err != nil {
-	// 	panic(err)
-	// }
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server failed: %v", err)
 	}

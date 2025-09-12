@@ -12,7 +12,7 @@ import (
 
 type Storage struct {
 	Events map[string]storage.Event
-	mu     sync.RWMutex //nolint:unused
+	mu     sync.RWMutex
 }
 
 func New() *Storage {
@@ -32,9 +32,9 @@ type EventCreateParams struct {
 type EventUpdateParams struct {
 	Date         *time.Time // Дата и время события;
 	Title        *string
-	Duration     *time.Time // Длительность события (или дата и время окончания); TODO HELP
+	Duration     *time.Time // Длительность события (или дата и время окончания);
 	Description  *string    // Описание события - длинный текст, опционально;
-	Notification *time.Time // За сколько времени высылать уведомление, опционально.  TODO HELP
+	Notification *time.Time // За сколько времени высылать уведомление, опционально.
 }
 
 func (s *Storage) Add(_ context.Context, ec EventCreateParams) (string, error) {
@@ -127,8 +127,6 @@ func (s *Storage) GetEventListing(userID string, date time.Time, period string) 
 	case month:
 		start = StartOfMonth(date)
 		end = EndOfMonth(date)
-		// default:
-		// 	fmt.Errorf("no such period %s", period) // TODO HELP надо ли здесь????
 	}
 
 	for _, event := range s.Events {
