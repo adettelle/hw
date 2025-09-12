@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -14,6 +16,7 @@ import (
 	internalhttp "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/memory"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -29,20 +32,32 @@ func initialize() error {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	config, err := configs.New(&startCtx, true, "./configs/config.yaml")
+	config, err := configs.New(&startCtx, true, "./configs/cfg.json")
 	if err != nil {
 		return err
 	}
 
-	logg, err := zap.NewDevelopment()
-	if err != nil {
-		panic("cannot initialize zap")
+	encoderCfg := zap.NewProductionEncoderConfig()
+	logLevel := zap.InfoLevel
+
+	if config.Logger.Level != "" {
+		logLevel, err = zapcore.ParseLevel(config.Logger.Level)
+		if err != nil {
+			fmt.Println("unable to set level")
+			os.Exit(1)
+		}
 	}
+
+	logg := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.Lock(os.Stdout),
+		zap.NewAtomicLevelAt(logLevel),
+	))
+	logg.Info("LEVELS", zap.String("cfgLevel", config.Logger.Level), zap.String("actualLevel", logg.Level().String()))
 	defer logg.Sync()
 
 	logg.Info("Hello!")
 	logg.Info(getVersion())
-
 	connStr := config.DBConnStr()
 
 	migrator.MustApplyMigrations(connStr)
@@ -61,12 +76,15 @@ func initialize() error {
 	go func() {
 		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(startCtx, time.Second*3)
+		stopCtx, cancel := context.WithTimeout(startCtx, time.Second*3)
 		defer cancel()
 
-		if err := server.Stop(ctx); err != nil {
+		if err := server.Stop(stopCtx); err != nil {
 			logg.Error("failed to stop http server", zap.Error(err))
+			os.Exit(1)
 		}
+		<-stopCtx.Done()
+		os.Exit(0)
 	}()
 
 	logg.Info("calendar is running...")

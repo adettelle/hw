@@ -29,7 +29,7 @@ func (s *Server) Start(ctx context.Context) error {
 	mux := http.NewServeMux()
 
 	srv := &http.Server{
-		Addr:         s.cfg.Config,
+		Addr:         s.cfg.Address,
 		Handler:      mux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -46,6 +46,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 func (s *Server) Stop(_ context.Context) error {
 	// TODO
+	s.logg.Info("Gracefully shutting down server")
 	return nil
 }
 
