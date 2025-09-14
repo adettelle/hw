@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // import pgx/v5 driver for golang-migrate
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )

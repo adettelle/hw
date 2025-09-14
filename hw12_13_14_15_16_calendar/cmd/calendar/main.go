@@ -44,7 +44,8 @@ func initialize() error {
 		logLevel, err = zapcore.ParseLevel(config.Logger.Level)
 		if err != nil {
 			fmt.Println("unable to set level")
-			os.Exit(1)
+			return err
+			// os.Exit(1)
 		}
 	}
 
