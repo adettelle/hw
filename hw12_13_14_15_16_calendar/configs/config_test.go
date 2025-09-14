@@ -14,13 +14,13 @@ func TestLoadConfig(t *testing.T) {
 	cfg, err := New(&ctx, true, "./cfg.json")
 	require.NoError(t, err)
 
-	require.Equal(t, "ERROR", cfg.Logger.Level)
-	require.Equal(t, "localhost:8080", cfg.Address)
+	require.Equal(t, "INFO", cfg.Logger.Level)
+	require.Equal(t, "localhost:8081", cfg.Address)
 	require.Equal(t, "localhost", cfg.DBHost)
 	require.Equal(t, "9999", cfg.DBPort)
 	require.Equal(t, "postgres", cfg.DBUser)
 	require.Equal(t, "123456", cfg.DBPassword)
-	require.Equal(t, "calendar", cfg.DBName)
+	require.Equal(t, "test_db", cfg.DBName)
 }
 
 func TestLoadInexistentConfig(t *testing.T) {
