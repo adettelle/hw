@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/helpers"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/pkg/helpers"
 )
 
 const (

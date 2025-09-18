@@ -11,7 +11,6 @@ create table event
     date_start timestamp not null default now(),
 	date_end timestamp not null default now(),
 	description text,
-	account_id integer,
+	account_id integer NOT NULL,
 	notification timestamp not null default now(),
-    foreign key (account_id) references account (id),
-    unique(account_id));
+    foreign key (account_id) references account (id));

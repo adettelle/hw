@@ -11,10 +11,11 @@ import (
 
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs" //nolint:depguard
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/app"
-	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/database"
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/migrator"
 	internalhttp "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/sql"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/pkg/database"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -59,20 +60,24 @@ func initialize() error {
 
 	logg.Info("Hello!")
 	logg.Info(getVersion())
-	connStr := config.DBConnStr()
+	// connStr := config.DBConnStr()
 
-	migrator.MustApplyMigrations(connStr)
+	// migrator.MustApplyMigrations(connStr)
 
-	db, err := database.Connect(connStr)
+	// db, err := database.Connect(connStr)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer db.Close()
+
+	// storager := memorystorage.New()
+	storager, err := initStorager(config, logg)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	calendar := app.New(logg, storager)
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
-
-	server := internalhttp.NewServer(config, logg, calendar)
+	server := internalhttp.NewServer(config, logg, calendar, storager)
 
 	go func() {
 		<-ctx.Done()
@@ -90,9 +95,37 @@ func initialize() error {
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(startCtx); err != nil { // ctx ????
+	if err := server.Start(startCtx, logg); err != nil { // ctx ????
 		logg.Error("failed to start http server", zap.Error(err))
 		return err
 	}
 	return nil
+}
+
+// initStorager not only constructs, but also starts related processes
+// depending on which storager we choose.
+func initStorager(cfg *configs.Config, logg *zap.Logger) (app.Storager, error) {
+	var storager app.Storager
+
+	connStr := cfg.DBConnStr()
+
+	if connStr != "" {
+		fmt.Println("CONN", connStr)
+		db, err := database.Connect(connStr)
+		if err != nil {
+			return nil, err
+		}
+		// defer db.Close() // TODO здесь или нет ?????
+
+		storager = &sqlstorage.DBStorage{
+			Ctx:  context.Background(),
+			DB:   db,
+			Logg: logg,
+		}
+
+		migrator.MustApplyMigrations(connStr, logg)
+	} else {
+		storager = memorystorage.New()
+	}
+	return storager, nil
 }

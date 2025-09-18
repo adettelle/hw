@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage"
-	memorystorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
 type App struct { // TODO
@@ -14,16 +13,17 @@ type App struct { // TODO
 type Logger interface { // TODO
 }
 
-type Storage interface { // TODO
-	Add(ctx context.Context, event memorystorage.EventCreateParams) (string, error) // добавить событие;
-	Update(id string, event memorystorage.EventUpdateParams) error                  // обновить событие;
-	Delete(id string) error                                                         // удавить событие;
+type Storager interface { // TODO
+	AddEventByID(ctx context.Context, event storage.EventCreateDTO, userID string) (string, error)
+	UpdateEventByID(ctx context.Context, id string, event storage.EventUpdateDTO, usserID string) error
+	DeleteEventByID(ctx context.Context, id string) error
 	// получить список событий на день/неделю/месяц;
-	GetEventListing(userID string, date time.Time, period string) ([]storage.Event, error)
+	GetEventListingByUserID(userID string, date time.Time, period string) ([]storage.Event, error)
+	GetEventByID(id string, userID string) (storage.Event, error)
 	Notify(day uint) (string, error)
 }
 
-func New(_ Logger, _ Storage) *App {
+func New(_ Logger, _ Storager) *App {
 	return &App{}
 }
 

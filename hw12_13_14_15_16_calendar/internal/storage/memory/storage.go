@@ -20,24 +20,28 @@ func New() *Storage {
 	return &Storage{Events: events}
 }
 
-type EventCreateParams struct {
-	DateStart    time.Time // Дата и время события;
-	Title        string
-	DateEnd      time.Time // дата и время окончания (Длительность события);
-	Description  string    // Описание события - длинный текст, опционально;
-	UserID       string    // ID пользователя, владельца события;
-	Notification time.Time // За сколько времени высылать уведомление, опционально.
-}
+// type EventCreateParams struct {
+// 	Title        string
+// 	CreatedAt    time.Time
+// 	DateStart    time.Time // Дата и время события;
+// 	DateEnd      time.Time // дата и время окончания (Длительность события);
+// 	Description  string    // Описание события - длинный текст, опционально;
+// 	UserID       string    // ID пользователя, владельца события;
+// 	Notification time.Time // За сколько времени высылать уведомление, опционально.
+// }
 
-type EventUpdateParams struct {
-	Date         *time.Time // Дата и время события;
-	Title        *string
-	Duration     *time.Time // Длительность события (или дата и время окончания);
-	Description  *string    // Описание события - длинный текст, опционально;
-	Notification *time.Time // За сколько времени высылать уведомление, опционально.
-}
+// type EventUpdateParams struct {
+// 	Title        *string
+// 	CreatedAt    *time.Time
+// 	Date         *time.Time // Дата и время события;
+// 	Duration     *time.Time // Длительность события (или дата и время окончания);
+// 	Description  *string    // Описание события - длинный текст, опционально;
+// 	Notification *time.Time // За сколько времени высылать уведомление, опционально.
+// }
 
-func (s *Storage) Add(_ context.Context, ec EventCreateParams) (string, error) {
+func (s *Storage) AddEventByID(_ context.Context,
+	ec storage.EventCreateDTO, userID string,
+) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -45,17 +49,20 @@ func (s *Storage) Add(_ context.Context, ec EventCreateParams) (string, error) {
 	event := storage.Event{
 		ID:           id,
 		Title:        ec.Title,
+		CreatedAt:    time.Now(),
 		Date:         ec.DateStart,
 		Duration:     ec.DateEnd,
 		Description:  ec.Description,
-		UserID:       ec.UserID,
+		UserID:       userID,
 		Notification: ec.Notification,
 	}
 	s.Events[id] = event
 	return id, nil
 }
 
-func (s *Storage) Update(id string, event EventUpdateParams) error {
+func (s *Storage) UpdateEventByID(_ context.Context, id string,
+	event storage.EventUpdateDTO, _ string,
+) error { // ctx userID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -86,7 +93,7 @@ func (s *Storage) Update(id string, event EventUpdateParams) error {
 	return nil
 }
 
-func (s *Storage) Delete(id string) error {
+func (s *Storage) DeleteEventByID(_ context.Context, id string) error { // ctx
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -106,7 +113,7 @@ const (
 
 // получить список событий на день/неделю/месяц;
 // date - дата; если неделя или месяц - то будет вокруг этой даты.
-func (s *Storage) GetEventListing(userID string, date time.Time, period string) ([]storage.Event, error) {
+func (s *Storage) GetEventListingByUserID(userID string, date time.Time, period string) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -166,7 +173,7 @@ func (s *Storage) Notify(_ uint) (string, error) { // day
 	return "", nil
 }
 
-func (s *Storage) GetByID(id string) (storage.Event, error) {
+func (s *Storage) GetEventByID(id string, _ string) (storage.Event, error) { // userID
 	event, ok := s.Events[id]
 	if !ok {
 		return storage.Event{}, fmt.Errorf("no evend with id %s", id)

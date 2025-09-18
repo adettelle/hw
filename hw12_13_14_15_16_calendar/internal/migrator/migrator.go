@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
-	"log"
+	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // import pgx/v5 driver for golang-migrate
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"go.uber.org/zap"
 )
 
 // migrationsDir specifies the directory containing migration files within the embedded filesystem.
@@ -27,37 +28,43 @@ var MigrationsFS embed.FS
 //
 // Parameters:
 //   - dbParams: A connection string containing database configuration details.
-func MustApplyMigrations(dbParams string) {
+func MustApplyMigrations(dbParams string, logg *zap.Logger) {
 	// Create a new source driver from the embedded filesystem
 	srcDriver, err := iofs.New(MigrationsFS, migrationsDir)
 	if err != nil {
-		log.Fatal(err) // TODO HELP здесь должен быть zap Logger или нет ???
+		logg.Fatal("unable to create a new source driver from the embedded filesystem", zap.Error(err))
+		// log.Fatal(err) // TODO HELP здесь должен быть zap Logger или нет ???
 	}
-
+	fmt.Println(" !!!! ", dbParams)
 	// Open the database connection
 	db, err := sql.Open("pgx", dbParams)
 	if err != nil {
-		log.Fatal(err)
+		logg.Fatal("unable to open the database connection", zap.Error(err))
+		// log.Fatal(err)
 	}
 
 	// Create a PostgreSQL driver instance
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		log.Fatalf("unable to create db instance: %v", err)
+		logg.Fatal("unable to create db instance", zap.Error(err))
+		// log.Fatalf("unable to create db instance: %v", err)
 	}
 
 	// Create a new migrator instance with the embedded migration files
 	migrator, err := migrate.NewWithInstance("migration_embedded_sql_files", srcDriver, "psql_db", driver)
 	if err != nil {
-		log.Fatalf("unable to create migration: %v", err)
+		logg.Fatal("unable to create migration", zap.Error(err))
+		// log.Fatalf("unable to create migration: %v", err)
 	}
 
 	// Apply all migrations; ignore the error if there are no changes
 	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Fatalf("unable to apply migrations %v", err)
+		logg.Fatal("unable to apply migration", zap.Error(err))
+		// log.Fatalf("unable to apply migrations %v", err)
 	}
 
 	migrator.Close()
 
-	log.Println("Migrations applied")
+	logg.Info("Migrations applied")
+	// log.Println("Migrations applied")
 }
