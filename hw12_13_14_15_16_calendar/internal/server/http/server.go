@@ -260,7 +260,7 @@ func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.
 	resp, err := json.Marshal(events)
 	if err != nil {
 		eh.Logg.Info("error in marshalling json:", zap.Error(err))
-		//log.Println("error in marshalling json:", err)
+		// log.Println("error in marshalling json:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
