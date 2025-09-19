@@ -37,7 +37,7 @@ func (s *Server) Start(ctx context.Context, logg *zap.Logger) error {
 	// mux := http.NewServeMux()
 
 	// mux := Router()
-	eventHandlers := New(s.storager)
+	eventHandlers := New(s.storager, logg)
 	router := NewRouter(eventHandlers, logg)
 
 	srv := &http.Server{
@@ -69,11 +69,13 @@ func (eh *EventHandlers) mainPage(res http.ResponseWriter, _ *http.Request) {
 type EventHandlers struct {
 	Storager app.Storager
 	DBCon    database.DBConnector
+	Logg     *zap.Logger
 }
 
-func New(storager app.Storager) *EventHandlers {
+func New(storager app.Storager, logg *zap.Logger) *EventHandlers {
 	return &EventHandlers{
 		Storager: storager,
+		Logg:     logg,
 	}
 }
 
@@ -126,13 +128,15 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 	// читаем тело запроса
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		log.Println("error in reading body:", err)
+		eh.Logg.Info("error in reading body:", zap.Error(err))
+		// log.Println("error in reading body:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := json.Unmarshal(buf.Bytes(), &event); err != nil {
-		log.Println("error in unmarshalling json:", err)
+		eh.Logg.Info("error in unmarshalling json:", zap.Error(err))
+		// log.Println("error in unmarshalling json:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -140,14 +144,16 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 	validate := validator.New()
 	err = validate.Struct(event)
 	if err != nil {
-		log.Println("error in validating:", err)
+		eh.Logg.Info("error in validating:", zap.Error(err))
+		// log.Println("error in validating:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	_, err = eh.Storager.AddEventByID(context.Background(), event, userID)
 	if err != nil {
-		log.Println("error in adding event:", err)
+		eh.Logg.Info("error in adding event:", zap.Error(err))
+		// log.Println("error in adding event:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -183,20 +189,23 @@ func (eh *EventHandlers) UpdatEventeByID(w http.ResponseWriter, r *http.Request)
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		log.Println("error in reading body:", err)
+		eh.Logg.Info("error in reading body:", zap.Error(err))
+		// log.Println("error in reading body:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &event); err != nil {
-		log.Println("error in unmarshalling json:", err)
+		eh.Logg.Info("error in unmarshalling json:", zap.Error(err))
+		// log.Println("error in unmarshalling json:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = eh.Storager.UpdateEventByID(context.Background(), eventID, event, userID)
 	if err != nil {
-		log.Println("error in updating event:", err)
+		eh.Logg.Info("error in updating event:", zap.Error(err))
+		// log.Println("error in updating event:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -229,11 +238,12 @@ func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.
 	date := r.URL.Query().Get("date")
 	parsedTime, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		log.Println("error in parsing time:", err)
+		eh.Logg.Info("error in parsing time:", zap.Error(err))
+		// log.Println("error in parsing time:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(" !!!!!!!!!! ", userID, period, parsedTime)
+	// fmt.Println(" !!!!!!!!!! ", userID, period, parsedTime)
 	events, err := eh.Storager.GetEventListingByUserID(userID, parsedTime, period) // storage.Event{}
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -241,21 +251,24 @@ func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.
 	}
 
 	if len(events) == 0 {
-		log.Println("len(events) == 0")
+		eh.Logg.Info("no events")
+		// log.Println("len(events) == 0")
 		w.WriteHeader(http.StatusNoContent) // нет данных для ответа
 		return
 	}
 
 	resp, err := json.Marshal(events)
 	if err != nil {
-		log.Println("error in marshalling json:", err)
+		eh.Logg.Info("error in marshalling json:", zap.Error(err))
+		//log.Println("error in marshalling json:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	_, err = w.Write(resp)
 	if err != nil {
-		log.Println("error in writing resp:", err)
+		eh.Logg.Info("error in writing resp:", zap.Error(err))
+		// log.Println("error in writing resp:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -1,7 +1,7 @@
 package internalhttp
 
 import (
-	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/logger"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/pkg/mware/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
