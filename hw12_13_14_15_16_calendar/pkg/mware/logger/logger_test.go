@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestLogger(t *testing.T) {
+func TestLogger(_ *testing.T) {
 	// ctx := context.Background()
 	// config, err := configs.New(&ctx, true, "./../configs/cfg.json") // ./configs/cfg.json
 	// require.NoError(t, err)
