@@ -12,10 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// var (
-// 	_ app.Storager = (*DBStorage)(nil)
-// )
-
 type DBStorage struct {
 	Ctx  context.Context
 	DB   *sql.DB
@@ -41,7 +37,6 @@ func (s *DBStorage) GetEventByID(eventID string, userID string) (storage.Event, 
 	 	FROM event WHERE account_id = $1 and id = $2;`
 	row := s.DB.QueryRowContext(s.Ctx, sqlSt, userID, eventID)
 
-	// переменная для чтения результата
 	var e eventGetByID
 
 	err := row.Scan(&e.Title, &e.CreatedAt, &e.Date, &e.Duration, &e.Description, &e.Notification)

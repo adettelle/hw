@@ -39,12 +39,6 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// logger, err := zap.NewDevelopment()
-		// if err != nil {
-		// 	panic("cannot initialize zap")
-		// }
-		// defer logger.Sync()
-
 		responseData := &responseData{status: 0, size: 0}
 
 		lw := loggingResponseWriter{

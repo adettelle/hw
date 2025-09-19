@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs"
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage"
-	"github.com/adettelle/hw/hw12_13_14_15_calendar/pkg/database"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
@@ -68,8 +66,8 @@ func (eh *EventHandlers) mainPage(res http.ResponseWriter, _ *http.Request) {
 
 type EventHandlers struct {
 	Storager app.Storager
-	DBCon    database.DBConnector
-	Logg     *zap.Logger
+	//	DBCon    database.DBConnector
+	Logg *zap.Logger
 }
 
 func New(storager app.Storager, logg *zap.Logger) *EventHandlers {
@@ -80,19 +78,12 @@ func New(storager app.Storager, logg *zap.Logger) *EventHandlers {
 }
 
 func (eh *EventHandlers) GetEventByID(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 	w.Header().Set("Content-Type", "application/json")
 
 	userID := r.PathValue("userid")
-	fmt.Print("userID = ", userID)
-
 	eventID := r.PathValue("id")
-	fmt.Print("id = ", eventID)
 
-	event, err := eh.Storager.GetEventByID(eventID, userID) // storage.Event{}
+	event, err := eh.Storager.GetEventByID(eventID, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -111,16 +102,9 @@ func (eh *EventHandlers) GetEventByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+	w.Header().Set("Content-Type", "application/json")
 
 	userID := r.PathValue("userid")
-	fmt.Print("userID = ", userID)
-
-	// eventID := r.PathValue("id")
-	// fmt.Print("id = ", eventID)
 
 	var buf bytes.Buffer
 	var event storage.EventCreateDTO
@@ -128,15 +112,13 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 	// читаем тело запроса
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		eh.Logg.Info("error in reading body:", zap.Error(err))
-		// log.Println("error in reading body:", err)
+		eh.Logg.Error("error in reading body:", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := json.Unmarshal(buf.Bytes(), &event); err != nil {
-		eh.Logg.Info("error in unmarshalling json:", zap.Error(err))
-		// log.Println("error in unmarshalling json:", err)
+		eh.Logg.Error("error in unmarshalling json:", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -144,16 +126,14 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 	validate := validator.New()
 	err = validate.Struct(event)
 	if err != nil {
-		eh.Logg.Info("error in validating:", zap.Error(err))
-		// log.Println("error in validating:", err)
+		eh.Logg.Error("error in validating:", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	_, err = eh.Storager.AddEventByID(context.Background(), event, userID)
 	if err != nil {
-		eh.Logg.Info("error in adding event:", zap.Error(err))
-		// log.Println("error in adding event:", err)
+		eh.Logg.Error("error in adding event:", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -162,11 +142,6 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (eh *EventHandlers) DeleteEventByID(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	eventID := r.PathValue("id")
 	err := eh.Storager.DeleteEventByID(context.Background(), eventID)
 	if err != nil {
@@ -175,12 +150,7 @@ func (eh *EventHandlers) DeleteEventByID(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (eh *EventHandlers) UpdatEventeByID(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
+func (eh *EventHandlers) UpdateEventeByID(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("userid")
 	eventID := r.PathValue("id")
 
@@ -189,35 +159,26 @@ func (eh *EventHandlers) UpdatEventeByID(w http.ResponseWriter, r *http.Request)
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		eh.Logg.Info("error in reading body:", zap.Error(err))
-		// log.Println("error in reading body:", err)
+		eh.Logg.Error("error in reading body:", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &event); err != nil {
-		eh.Logg.Info("error in unmarshalling json:", zap.Error(err))
-		// log.Println("error in unmarshalling json:", err)
+		eh.Logg.Error("error in unmarshalling json:", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = eh.Storager.UpdateEventByID(context.Background(), eventID, event, userID)
 	if err != nil {
-		eh.Logg.Info("error in updating event:", zap.Error(err))
-		// log.Println("error in updating event:", err)
+		eh.Logg.Error("error in updating event:", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
 }
-
-//  func NewEventResponse(event storage.EventGetDTO) *storage.EventGetDTO {
-// 	res := storage.EventGetDTO{
-// 		ID: ,
-// 	}
-//  }
 
 func NewEventsListResponse(events []storage.EventGetDTO) []*storage.EventGetDTO {
 	res := []*storage.EventGetDTO{}
@@ -228,23 +189,30 @@ func NewEventsListResponse(events []storage.EventGetDTO) []*storage.EventGetDTO 
 }
 
 func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	userID := r.PathValue("userid")
 	period := r.URL.Query().Get("period")
-	date := r.URL.Query().Get("date")
-	parsedTime, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		eh.Logg.Info("error in parsing time:", zap.Error(err))
-		// log.Println("error in parsing time:", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	if period == "" {
+		period = "day"
 	}
-	// fmt.Println(" !!!!!!!!!! ", userID, period, parsedTime)
-	events, err := eh.Storager.GetEventListingByUserID(userID, parsedTime, period) // storage.Event{}
+
+	var parsedTime time.Time
+	var err error
+
+	date := r.URL.Query().Get("date")
+
+	if date == "" {
+		now := time.Now()
+		parsedTime = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 1, 0, time.Local)
+	} else {
+		parsedTime, err = time.Parse("2006-01-02", date)
+		if err != nil {
+			eh.Logg.Error("error in parsing time:", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+	events, err := eh.Storager.GetEventListingByUserID(userID, parsedTime, period)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -252,35 +220,21 @@ func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.
 
 	if len(events) == 0 {
 		eh.Logg.Info("no events")
-		// log.Println("len(events) == 0")
 		w.WriteHeader(http.StatusNoContent) // нет данных для ответа
 		return
 	}
 
 	resp, err := json.Marshal(events)
 	if err != nil {
-		eh.Logg.Info("error in marshalling json:", zap.Error(err))
-		// log.Println("error in marshalling json:", err)
+		eh.Logg.Error("error in marshalling json", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	_, err = w.Write(resp)
 	if err != nil {
-		eh.Logg.Info("error in writing resp:", zap.Error(err))
-		// log.Println("error in writing resp:", err)
+		eh.Logg.Error("error in writing resp:", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }
-
-// func (eh *EventHandlers) CheckConnectionToDB(w http.ResponseWriter, r *http.Request) {
-// 	log.Println("Checking DB")
-
-// 	_, err := eh.DBCon.Connect()
-// 	if err != nil {
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-// 	w.WriteHeader(http.StatusOK)
-// }

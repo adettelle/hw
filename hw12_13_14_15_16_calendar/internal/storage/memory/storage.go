@@ -20,25 +20,6 @@ func New() *Storage {
 	return &Storage{Events: events}
 }
 
-// type EventCreateParams struct {
-// 	Title        string
-// 	CreatedAt    time.Time
-// 	DateStart    time.Time // Дата и время события;
-// 	DateEnd      time.Time // дата и время окончания (Длительность события);
-// 	Description  string    // Описание события - длинный текст, опционально;
-// 	UserID       string    // ID пользователя, владельца события;
-// 	Notification time.Time // За сколько времени высылать уведомление, опционально.
-// }
-
-// type EventUpdateParams struct {
-// 	Title        *string
-// 	CreatedAt    *time.Time
-// 	Date         *time.Time // Дата и время события;
-// 	Duration     *time.Time // Длительность события (или дата и время окончания);
-// 	Description  *string    // Описание события - длинный текст, опционально;
-// 	Notification *time.Time // За сколько времени высылать уведомление, опционально.
-// }
-
 func (s *Storage) AddEventByID(_ context.Context,
 	ec storage.EventCreateDTO, userID string,
 ) (string, error) {

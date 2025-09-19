@@ -179,7 +179,7 @@ func ensureHostFlagIsCorrect(ctx context.Context, host string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("host in ensureHostFlagIsCorrect:", addrs)
+	log.Println("host in ensureHostFlagIsCorrect:", addrs)
 }
 
 func ensurePortFlagIsCorrect(port string) {

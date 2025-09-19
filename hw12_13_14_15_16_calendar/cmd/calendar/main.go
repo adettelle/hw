@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -44,9 +43,8 @@ func initialize() error {
 	if config.Logger.Level != "" {
 		logLevel, err = zapcore.ParseLevel(config.Logger.Level)
 		if err != nil {
-			fmt.Println("unable to set level")
+			log.Println("unable to set level")
 			return err
-			// os.Exit(1)
 		}
 	}
 
@@ -60,17 +58,7 @@ func initialize() error {
 
 	logg.Info("Hello!")
 	logg.Info(getVersion())
-	// connStr := config.DBConnStr()
 
-	// migrator.MustApplyMigrations(connStr)
-
-	// db, err := database.Connect(connStr)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer db.Close()
-
-	// storager := memorystorage.New()
 	storager, err := initStorager(config, logg)
 	if err != nil {
 		return err
@@ -110,12 +98,10 @@ func initStorager(cfg *configs.Config, logg *zap.Logger) (app.Storager, error) {
 	connStr := cfg.DBConnStr()
 
 	if connStr != "" {
-		fmt.Println("CONN", connStr)
 		db, err := database.Connect(connStr)
 		if err != nil {
 			return nil, err
 		}
-		// defer db.Close() // TODO здесь или нет ?????
 
 		storager = &sqlstorage.DBStorage{
 			Ctx:  context.Background(),

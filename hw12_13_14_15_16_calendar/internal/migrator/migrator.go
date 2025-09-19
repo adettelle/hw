@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
-	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // import pgx/v5 driver for golang-migrate
@@ -33,38 +32,31 @@ func MustApplyMigrations(dbParams string, logg *zap.Logger) {
 	srcDriver, err := iofs.New(MigrationsFS, migrationsDir)
 	if err != nil {
 		logg.Fatal("unable to create a new source driver from the embedded filesystem", zap.Error(err))
-		// log.Fatal(err) // TODO HELP здесь должен быть zap Logger или нет ???
 	}
-	fmt.Println(" !!!! ", dbParams)
 	// Open the database connection
 	db, err := sql.Open("pgx", dbParams)
 	if err != nil {
 		logg.Fatal("unable to open the database connection", zap.Error(err))
-		// log.Fatal(err)
 	}
 
 	// Create a PostgreSQL driver instance
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		logg.Fatal("unable to create db instance", zap.Error(err))
-		// log.Fatalf("unable to create db instance: %v", err)
 	}
 
 	// Create a new migrator instance with the embedded migration files
 	migrator, err := migrate.NewWithInstance("migration_embedded_sql_files", srcDriver, "psql_db", driver)
 	if err != nil {
 		logg.Fatal("unable to create migration", zap.Error(err))
-		// log.Fatalf("unable to create migration: %v", err)
 	}
 
 	// Apply all migrations; ignore the error if there are no changes
 	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		logg.Fatal("unable to apply migration", zap.Error(err))
-		// log.Fatalf("unable to apply migrations %v", err)
 	}
 
 	migrator.Close()
 
 	logg.Info("Migrations applied")
-	// log.Println("Migrations applied")
 }
