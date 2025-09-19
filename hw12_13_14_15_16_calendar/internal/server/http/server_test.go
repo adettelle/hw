@@ -1,6 +1,7 @@
 package internalhttp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -30,7 +31,7 @@ func TestGetEventByID(t *testing.T) {
 	reqURL := "/user/1/event/1"
 
 	layout := "2006-01-02 15:04:05"
-	baseTime, err := time.ParseInLocation(layout, "2025-09-19 13:01:45", time.UTC) // или time.Local, либо time.FixedZone(...)
+	baseTime, err := time.ParseInLocation(layout, "2025-09-19 13:01:45", time.UTC)
 	require.NoError(t, err)
 
 	createdAt := baseTime
@@ -38,7 +39,7 @@ func TestGetEventByID(t *testing.T) {
 	duration := createdAt.AddDate(0, 0, 2)
 	notification := createdAt.AddDate(0, 0, 1)
 
-	request, err := http.NewRequest(http.MethodGet, reqURL, nil)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, nil)
 	require.NoError(t, err)
 	request.SetPathValue("userid", "1")
 	request.SetPathValue("id", "1")

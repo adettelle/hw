@@ -125,7 +125,7 @@ func (s *DBStorage) UpdateEventByID(ctx context.Context,
 	}
 	vals = append(vals, eventID)
 
-	sqlSt := sqlStBase + strings.Join(sqlSet, ", ") + " where id = $" + strconv.Itoa(index) + ";"
+	sqlSt := sqlStBase + strings.Join(sqlSet, ", ") + " where id = $" + strconv.Itoa(index) + ";" //nolint:gosec
 
 	_, err := s.DB.ExecContext(ctx, sqlSt, vals...)
 	if err != nil {

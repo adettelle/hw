@@ -8,8 +8,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-
-	"github.com/adettelle/hw/hw12_13_14_15_calendar/pkg/helpers"
 )
 
 const (
@@ -76,7 +74,7 @@ func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, erro
 	cfg := newConfigFromFlag(ignoreFlags, jsonPath)
 
 	if cfg.Config != "" {
-		cfgFromJSON, err := helpers.ReadCfgJSON[Config](cfg.Config)
+		cfgFromJSON, err := ReadCfgJSON[Config](cfg.Config)
 		if err != nil {
 			return nil, err
 		}
