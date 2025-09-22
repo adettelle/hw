@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -20,6 +22,10 @@ type loggingResponseWriter struct {
 }
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	// если статус ещё не установлен, считаем его 200
+	if r.responseData.status == 0 {
+		r.responseData.status = http.StatusOK
+	}
 	// записываем ответ, используя оригинальный http.ResponseWriter
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
@@ -50,10 +56,47 @@ func WithLogging(h http.HandlerFunc, logger *zap.Logger) http.HandlerFunc {
 
 		duration := time.Since(start)
 
-		logger.Info("Request data:", zap.String("uri", r.RequestURI),
-			zap.String("method", r.Method), zap.Int("ststus", responseData.status),
-			zap.Duration("duration", duration), zap.Int("size", responseData.size))
+		if responseData.status == 0 {
+			responseData.status = http.StatusOK
+		}
+		latencyMs := float64(duration.Nanoseconds())
+
+		logger.Info("http_request",
+			zap.String("cient_ip", clientIP(r)),
+			zap.Time("time", time.Now()),
+			zap.String("method", r.Method),
+			zap.String("path", r.RequestURI),
+			zap.String("proto", r.Proto),
+			zap.Int("status", responseData.status),
+			zap.Float64("latency_ms", latencyMs),
+			zap.Duration("duration", duration),
+			zap.Int("response_size", responseData.size),
+			zap.String("user_agent", r.UserAgent()),
+		)
 	}
 	// возвращаем функционально расширенный хендлер
 	return http.HandlerFunc(logFn)
+}
+
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				return p
+			}
+		}
+	}
+
+	if xr := r.Header.Get("X-Real-IP"); xr != "" {
+		return xr
+	}
+
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+
+	return host
 }
