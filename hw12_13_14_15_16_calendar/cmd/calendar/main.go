@@ -2,60 +2,116 @@ package main
 
 import (
 	"context"
-	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs" //nolint:depguard
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/app"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/migrator"
+	internalhttp "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/sql"
+	"github.com/adettelle/hw/hw12_13_14_15_calendar/pkg/database"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-var configFile string
-
-func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+func main() {
+	err := initialize()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func main() {
-	flag.Parse()
-
-	if flag.Arg(0) == "version" {
-		printVersion()
-		return
-	}
-
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
-
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
-
-	server := internalhttp.NewServer(logg, calendar)
-
-	ctx, cancel := signal.NotifyContext(context.Background(),
+func initialize() error {
+	startCtx := context.Background()
+	ctx, cancel := signal.NotifyContext(startCtx,
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
+
+	config, err := configs.New(&startCtx, true, "./configs/cfg.json")
+	if err != nil {
+		return err
+	}
+
+	encoderCfg := zap.NewProductionEncoderConfig()
+	logLevel := zap.InfoLevel
+
+	if config.Logger.Level != "" {
+		logLevel, err = zapcore.ParseLevel(config.Logger.Level)
+		if err != nil {
+			log.Println("unable to set level")
+			return err
+		}
+	}
+
+	logg := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.Lock(os.Stdout),
+		zap.NewAtomicLevelAt(logLevel),
+	))
+	logg.Info("LEVELS", zap.String("cfgLevel", config.Logger.Level), zap.String("actualLevel", logg.Level().String()))
+	defer logg.Sync()
+
+	logg.Info("Hello!")
+	logg.Info(getVersion())
+
+	storager, err := initStorager(config, logg)
+	if err != nil {
+		return err
+	}
+	calendar := app.New(logg, storager)
+
+	server := internalhttp.NewServer(config, logg, calendar, storager)
 
 	go func() {
 		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		stopCtx, cancel := context.WithTimeout(startCtx, time.Second*3)
 		defer cancel()
 
-		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+		if err := server.Stop(stopCtx); err != nil {
+			logg.Error("failed to stop http server", zap.Error(err))
+			os.Exit(1)
 		}
+		<-stopCtx.Done()
+		os.Exit(0)
 	}()
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1) //nolint:gocritic
+	if err := server.Start(startCtx, logg); err != nil { // ctx ????
+		logg.Error("failed to start http server", zap.Error(err))
+		return err
 	}
+	return nil
+}
+
+// initStorager not only constructs, but also starts related processes
+// depending on which storager we choose.
+func initStorager(cfg *configs.Config, logg *zap.Logger) (app.Storager, error) {
+	var storager app.Storager
+
+	connStr := cfg.DBConnStr()
+
+	if connStr != "" {
+		db, err := database.Connect(connStr)
+		if err != nil {
+			return nil, err
+		}
+
+		storager = &sqlstorage.DBStorage{
+			Ctx:  context.Background(),
+			DB:   db,
+			Logg: logg,
+		}
+
+		migrator.MustApplyMigrations(connStr, logg)
+	} else {
+		storager = memorystorage.New()
+	}
+	return storager, nil
 }
