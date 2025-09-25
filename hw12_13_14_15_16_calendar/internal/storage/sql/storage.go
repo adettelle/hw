@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -83,8 +82,8 @@ func (s *DBStorage) AddEventByID(ctx context.Context,
 }
 
 func (s *DBStorage) UpdateEventByID(ctx context.Context,
-	eventID string, event storage.EventUpdateDTO, _ string,
-) error { // userID
+	eventID string, event storage.EventUpdateDTO, userID string,
+) error {
 	pairs := map[string]any{}
 
 	if event.Title != nil {
@@ -105,7 +104,8 @@ func (s *DBStorage) UpdateEventByID(ctx context.Context,
 
 	sqlStBase := `update event set `
 	sqlSet := []string{}
-	vals := []any{}
+	vals := []any{} // "a", "b"
+	// pairs = title: a, description: b
 	index := 1
 
 	for k, v := range pairs {
@@ -113,15 +113,20 @@ func (s *DBStorage) UpdateEventByID(ctx context.Context,
 		index++
 		vals = append(vals, v)
 	}
+	// sqlSet = ["title = $1", "description = $2"]
+	// vals = ["a", "b"]
 
 	if len(pairs) == 0 {
 		s.Logg.Info("no field to update", zap.String("eventID", eventID))
 		return nil
 	}
-	vals = append(vals, eventID)
+	vals = append(vals, eventID, userID)
 
-	sqlSt := sqlStBase + strings.Join(sqlSet, ", ") + " where id = $" + strconv.Itoa(index) + ";" //nolint:gosec
-
+	sqlSt := sqlStBase + strings.Join(sqlSet, ", ") +
+		fmt.Sprintf(" where id = $%d and account_id = $%d;", index, index+1)
+		// " where id = $" + strconv.Itoa(index) +
+		// " and account_id = $" + strconv.Itoa(index+1) + ";" //nolint:gosec
+	// update event set title = $1, description = $2 where id = $3 and account_id = $4;
 	_, err := s.DB.ExecContext(ctx, sqlSt, vals...)
 	if err != nil {
 		s.Logg.Error("error in updateing event", zap.Error(err), zap.String("eventID", eventID))

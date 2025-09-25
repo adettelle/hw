@@ -127,14 +127,35 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = eh.Storager.AddEventByID(context.Background(), event, userID)
+	createdID, err := eh.Storager.AddEventByID(context.Background(), event, userID)
 	if err != nil {
 		eh.Logg.Error("error in adding event:", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	type id struct {
+		ID string `json:"id"`
+	}
+
+	res := id{
+		ID: createdID,
+	}
+
+	data, err := json.Marshal(res)
+	if err != nil {
+		eh.Logg.Error("error in marshalling event:", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+
+	_, err = w.Write(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (eh *EventHandlers) DeleteEventByID(w http.ResponseWriter, r *http.Request) {
@@ -144,6 +165,7 @@ func (eh *EventHandlers) DeleteEventByID(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (eh *EventHandlers) UpdateEventeByID(w http.ResponseWriter, r *http.Request) {
@@ -185,6 +207,8 @@ func NewEventsListResponse(events []storage.EventGetDTO) []*storage.EventGetDTO 
 }
 
 func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	userID := r.PathValue("userid")
 	period := r.URL.Query().Get("period")
 	if period == "" {
