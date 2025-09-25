@@ -15,7 +15,7 @@ type Logger interface { // TODO
 
 type Storager interface { // TODO
 	AddEventByID(ctx context.Context, event storage.EventCreateDTO, userID string) (string, error)
-	UpdateEventByID(ctx context.Context, id string, event storage.EventUpdateDTO, usserID string) error
+	UpdateEventByID(ctx context.Context, id string, event storage.EventUpdateDTO, userID string) error
 	DeleteEventByID(ctx context.Context, id string) error
 	// получить список событий на день/неделю/месяц;
 	GetEventListingByUserID(userID string, date time.Time, period string) ([]storage.Event, error)

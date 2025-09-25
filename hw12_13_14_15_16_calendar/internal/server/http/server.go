@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -15,10 +14,11 @@ import (
 	"go.uber.org/zap"
 )
 
-type Server struct { // TODO
+type Server struct {
 	cfg      *configs.Config
 	logg     *zap.Logger
 	storager app.Storager
+	srv      *http.Server
 }
 
 type Logger interface { // TODO
@@ -28,34 +28,31 @@ type Application interface { // TODO
 }
 
 func NewServer(cfg *configs.Config, logg *zap.Logger, _ Application, storager app.Storager) *Server {
-	return &Server{cfg: cfg, logg: logg, storager: storager}
-}
-
-func (s *Server) Start(ctx context.Context, logg *zap.Logger) error {
-	// mux := http.NewServeMux()
-
-	// mux := Router()
-	eventHandlers := New(s.storager, logg)
+	eventHandlers := New(storager, logg)
 	router := NewRouter(eventHandlers, logg)
-
 	srv := &http.Server{
-		Addr:         s.cfg.Address,
-		Handler:      router, // mux,
+		Addr:         cfg.Address,
+		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	// mux.HandleFunc(`/`, mainPage)
+	return &Server{cfg: cfg, logg: logg, storager: storager, srv: srv}
+}
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("server failed: %v", err)
+func (s *Server) Start(ctx context.Context, logg *zap.Logger) error {
+	if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logg.Fatal("server failed: %v", zap.Any("err", err))
 	}
 	<-ctx.Done()
 	return nil
 }
 
-func (s *Server) Stop(_ context.Context) error {
-	// TODO
+func (s *Server) Stop(ctx context.Context) error {
+	err := s.srv.Shutdown(ctx)
+	if err != nil {
+		return err
+	}
 	s.logg.Info("Gracefully shutting down server")
 	return nil
 }
@@ -66,8 +63,7 @@ func (eh *EventHandlers) mainPage(res http.ResponseWriter, _ *http.Request) {
 
 type EventHandlers struct {
 	Storager app.Storager
-	//	DBCon    database.DBConnector
-	Logg *zap.Logger
+	Logg     *zap.Logger
 }
 
 func New(storager app.Storager, logg *zap.Logger) *EventHandlers {

@@ -5,12 +5,14 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/configs" //nolint:depguard
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/app"
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/migrator"
+	internalgrpc "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage/sql"
@@ -63,30 +65,57 @@ func initialize() error {
 	if err != nil {
 		return err
 	}
+
 	calendar := app.New(logg, storager)
 
+	var wg sync.WaitGroup
+
 	server := internalhttp.NewServer(config, logg, calendar, storager)
+	serverGRPC := internalgrpc.NewGRPCServer(config, logg, storager)
 
 	go func() {
-		<-ctx.Done()
+		s := <-ctx.Done()
+		log.Printf("Got termination signal: %s. Graceful shutdown", s)
 
 		stopCtx, cancel := context.WithTimeout(startCtx, time.Second*3)
 		defer cancel()
 
-		if err := server.Stop(stopCtx); err != nil {
+		var err error
+		if err = server.Stop(stopCtx); err != nil {
 			logg.Error("failed to stop http server", zap.Error(err))
+		}
+
+		if err = serverGRPC.Close(); err != nil {
+			logg.Error("failed to stop grpc server", zap.Error(err))
+		}
+
+		if err != nil {
 			os.Exit(1)
 		}
+
 		<-stopCtx.Done()
 		os.Exit(0)
 	}()
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(startCtx, logg); err != nil { // ctx ????
-		logg.Error("failed to start http server", zap.Error(err))
-		return err
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := server.Start(startCtx, logg); err != nil {
+			logg.Fatal("failed to start http server", zap.Error(err))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := serverGRPC.Start(startCtx, logg); err != nil {
+			logg.Fatal("failed to start grpc server", zap.Error(err))
+			// return err
+		}
+	}()
+	wg.Wait()
 	return nil
 }
 

@@ -167,14 +167,14 @@ func (s *DBStorage) GetEventListingByUserID(userID string, date time.Time, perio
 	case week:
 		sqlSt = `SELECT id, title, date_start, date_end, description, notification
 			FROM event
-			WHERE account_id = 1
+			WHERE account_id = $1
 			AND date_start >= $2::date
 			AND date_start <  ($2::date + INTERVAL '1 week')
 			ORDER BY date_start;`
 	case month:
 		sqlSt = `SELECT id, title, date_start, date_end, description, notification
 			FROM event
-			WHERE account_id = 1
+			WHERE account_id = $1
 			AND date_start >= $2::date
 			AND date_start <  ($2::date + INTERVAL '1 month')
 			ORDER BY date_start;`

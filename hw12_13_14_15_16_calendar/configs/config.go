@@ -11,26 +11,28 @@ import (
 )
 
 const (
-	defaultAddress    = "localhost:8080"
-	defaultDBHost     = "localhost"
-	defaultDBPort     = "9999"
-	defaultDBUser     = "postgres"
-	defaultDBPassword = "123456"
-	defaultDBName     = "calendar"
+	defaultAddress     = "localhost:8080"
+	defaultGRPCAddress = "localhost:8082"
+	defaultDBHost      = "localhost"
+	defaultDBPort      = "9999"
+	defaultDBUser      = "postgres"
+	defaultDBPassword  = "123456"
+	defaultDBName      = "calendar"
 )
 
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger     *LoggerConf `json:"logger"`
-	Context    *context.Context
-	Config     string // путь до json файла конфигурации по умолчанию /configs/cfg.json
-	Address    string `json:"address"`
-	DBHost     string `json:"dbhost"`
-	DBPort     string `json:"dbport"`
-	DBUser     string `json:"dbuser"`
-	DBPassword string `json:"dbpassword"`
-	DBName     string `json:"dbname"`
+	Logger      *LoggerConf `json:"logger"`
+	Context     *context.Context
+	Config      string // путь до json файла конфигурации по умолчанию /configs/cfg.json
+	Address     string `json:"address"`
+	GRPCAddress string `json:"grpcaddr"`
+	DBHost      string `json:"dbhost"`
+	DBPort      string `json:"dbport"`
+	DBUser      string `json:"dbuser"`
+	DBPassword  string `json:"dbpassword"`
+	DBName      string `json:"dbname"`
 }
 
 type LoggerConf struct {
@@ -39,6 +41,7 @@ type LoggerConf struct {
 
 func InitFlags() *Config {
 	flagAddr := flag.String("a", "", "Net address localhost:port")
+	flagGRPCAddr := flag.String("g", "", "Net grpc address localhost:port")
 	flagConfig := flag.String("config", "", "path to file with config parametrs")
 
 	flagDBHost := flag.String("h", "", "dbhost")
@@ -53,8 +56,9 @@ func InitFlags() *Config {
 		Logger: &LoggerConf{
 			Level: "INFO",
 		},
-		Address: getEnvOrDefault("ADDRESS", flagAddr),
-		Config:  getEnvOrDefault("CONFIG", flagConfig),
+		Address:     getEnvOrDefault("ADDRESS", flagAddr),
+		GRPCAddress: getEnvOrDefault("GRPCAddress", flagGRPCAddr),
+		Config:      getEnvOrDefault("CONFIG", flagConfig),
 
 		DBHost:     getEnvOrDefault("DBHOST", flagDBHost),
 		DBPort:     getEnvOrDefault("DBPORT", flagDBPort),
@@ -85,6 +89,7 @@ func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, erro
 	cfg.applyDefauls()
 
 	ensureAddrFLagIsCorrect(cfg.Address)
+	ensureAddrFLagIsCorrect(cfg.GRPCAddress)
 	ensureHostFlagIsCorrect(*cfg.Context, cfg.DBHost)
 	ensurePortFlagIsCorrect(cfg.DBPort)
 
@@ -107,6 +112,9 @@ func newConfigFromFlag(ignoreFlags bool, jsonPath string) *Config {
 func (cfg *Config) applyDefauls() {
 	if cfg.Address == "" {
 		cfg.Address = defaultAddress
+	}
+	if cfg.GRPCAddress == "" {
+		cfg.GRPCAddress = defaultGRPCAddress
 	}
 
 	if cfg.DBHost == "" {
@@ -131,6 +139,9 @@ func (cfg *Config) applyDefauls() {
 func (cfg *Config) applyConfigFromJSON(cfgFromJSON *Config) {
 	if cfg.Address == "" {
 		cfg.Address = cfgFromJSON.Address
+	}
+	if cfg.GRPCAddress == "" {
+		cfg.GRPCAddress = cfgFromJSON.GRPCAddress
 	}
 	if cfg.DBHost == "" {
 		cfg.DBHost = cfgFromJSON.DBHost

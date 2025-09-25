@@ -1,5 +1,7 @@
 BIN := "./bin/calendar"
 DOCKER_IMG="calendar:develop"
+PROTO_DIR := "./api/proto"
+OUT_DIR := api
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
@@ -43,3 +45,9 @@ migrate-up:
 
 migrate-down:
 	./migrate -path internal/migrator/migration/ -database $(DB) -verbose down
+
+generate:
+	protoc -I$(PROTO_DIR) \
+		--go_out=paths=source_relative:$(OUT_DIR) \
+  		--go-grpc_out=paths=source_relative:$(OUT_DIR) \
+  		./api/proto/event.proto ./api/proto/event_service.proto  

@@ -7,5 +7,6 @@
     "dbport": "9999",
     "dbuser": "postgres",
     "dbpassword": "123456",
-    "dbname": "test_db"
+    "dbname": "test_db",
+    "grpcaddr": "localhost:8082"
 }
