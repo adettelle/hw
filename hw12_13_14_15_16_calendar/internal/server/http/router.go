@@ -12,7 +12,7 @@ func NewRouter(h *EventHandlers, logg *zap.Logger) chi.Router {
 	r.Get(`/`, logger.WithLogging(h.mainPage, logg))
 	r.Get(`/user/{userid}/event/{id}`, logger.WithLogging(h.GetEventByID, logg))
 	r.Put(`/user/{userid}/event/`, logger.WithLogging(h.AddEvent, logg))
-	r.Post(`/update/user/{userid}/event/{id}`, logger.WithLogging(h.UpdateEventeByID, logg)) // TODO !!!
+	r.Post(`/update/user/{userid}/event/{id}`, logger.WithLogging(h.UpdateEventeByID, logg))
 	r.Delete(`/user/{userid}/event/{id}`, logger.WithLogging(h.DeleteEventByID, logg))
 	r.Get(`/user/{userid}/events/`, logger.WithLogging(h.GetEventListingByUserID, logg))
 

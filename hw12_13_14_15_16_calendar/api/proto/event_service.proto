@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "event.proto";
+
+option go_package = "./;api";
+
+service Storager {
+  rpc AddEventByID(AddEventByIDRequest) returns (AddEventByIDResponse);
+  rpc UpdateEventByID(UpdateEventByIDRequest) returns (UpdateEventByIDResponse);
+  rpc DeleteEventByID(DeleteEventByIDRequest) returns (DeleteEventByIDResponse);
+  rpc GetEventListingByUserID(GetEventListingByUserIDRequest) returns (GetEventListingByUserIDResponse);
+  rpc GetEventByID(GetEventByIDRequest) returns (GetEventByIDResponse);
+  rpc Notify(NotifyRequest) returns (NotifyResponse);
+}
+
+message AddEventByIDRequest {
+  event.EventCreateDTO eventCreateDTO = 1;
+  string userID = 2;
+}
+
+message AddEventByIDResponse {
+  string id = 1;
+  string error = 2;
+}
+
+message UpdateEventByIDRequest {
+  string id = 1;
+  event.EventCreateDTO eventCreateDTO = 2;
+  string userID = 3;
+}
+
+message UpdateEventByIDResponse {
+  string error = 1;
+}
+
+message DeleteEventByIDRequest {
+  string id = 1;
+}
+
+message DeleteEventByIDResponse {
+  string error = 1;
+}
+
+message GetEventListingByUserIDRequest {
+  string userID = 1;
+  google.protobuf.Timestamp date = 2;
+  enum Period {
+    day = 0;
+    week = 1;
+    month = 2;
+  }
+  Period period = 3;
+}
+
+message GetEventListingByUserIDResponse {
+  repeated event.Event event = 1;
+  string error = 2;
+}
+
+message GetEventByIDRequest {
+  string id = 1;
+  string userID = 2;
+}
+
+message GetEventByIDResponse {
+  event.Event event = 1;
+  string error = 2;
+}
+
+message NotifyRequest {
+  uint32 day = 1;
+}
+
+message NotifyResponse {
+  string msg = 1;
+  string error = 2;
+}
+
