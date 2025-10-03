@@ -17,16 +17,16 @@ func TestStorageAdd(t *testing.T) {
 
 	eventToCreate1 := storage.EventCreateDTO{
 		Title:       "event1",
-		DateStart:   dateStart,
-		DateEnd:     dateStart.AddDate(0, 0, 3),
+		Start:       dateStart,
+		End:         dateStart.AddDate(0, 0, 3),
 		Description: "description of event 1",
 		// UserID:       "1",
 		Notification: dateStart.AddDate(0, -1, 0),
 	}
 	eventToCreate2 := storage.EventCreateDTO{
-		DateStart:   dateStart,
+		Start:       dateStart,
 		Title:       "event2",
-		DateEnd:     dateStart.AddDate(0, 0, 3),
+		End:         dateStart.AddDate(0, 0, 3),
 		Description: "description of event 2",
 		// UserID:       "2",
 		Notification: dateStart.AddDate(0, -2, 0),
@@ -42,9 +42,9 @@ func TestStorageAdd(t *testing.T) {
 	event1, err := store.GetEventByID(id1, user1)
 	require.NoError(t, err)
 
-	require.Equal(t, eventToCreate1.DateStart, event1.Date)
+	require.Equal(t, eventToCreate1.Start, event1.Start)
 	require.Equal(t, eventToCreate1.Title, event1.Title)
-	require.Equal(t, eventToCreate1.DateEnd, event1.Duration)
+	require.Equal(t, eventToCreate1.End, event1.End)
 	require.Equal(t, eventToCreate1.Description, event1.Description)
 	require.Equal(t, user1, event1.UserID)
 	require.Equal(t, eventToCreate1.Notification, event1.Notification)
@@ -52,9 +52,9 @@ func TestStorageAdd(t *testing.T) {
 	event2, err := store.GetEventByID(id2, user2)
 	require.NoError(t, err)
 
-	require.Equal(t, eventToCreate2.DateStart, event2.Date)
+	require.Equal(t, eventToCreate2.Start, event2.Start)
 	require.Equal(t, eventToCreate2.Title, event2.Title)
-	require.Equal(t, eventToCreate2.DateEnd, event2.Duration)
+	require.Equal(t, eventToCreate2.End, event2.End)
 	require.Equal(t, eventToCreate2.Description, event2.Description)
 	require.Equal(t, user2, event2.UserID)
 	require.Equal(t, eventToCreate2.Notification, event2.Notification)
@@ -67,17 +67,17 @@ func TestStorageUpdate(t *testing.T) {
 
 	store := New()
 	eventToCreate1 := storage.EventCreateDTO{
-		DateStart:   dateStart,
+		Start:       dateStart,
 		Title:       "event1",
-		DateEnd:     dateStart.AddDate(0, 0, 1),
+		End:         dateStart.AddDate(0, 0, 1),
 		Description: "description of event 1",
 		// UserID:       "1",
 		Notification: dateStart.AddDate(0, -1, 0),
 	}
 	eventToCreate2 := storage.EventCreateDTO{
-		DateStart:   dateStart,
+		Start:       dateStart,
 		Title:       "event2",
-		DateEnd:     dateStart.AddDate(0, 0, 3),
+		End:         dateStart.AddDate(0, 0, 3),
 		Description: "description of event 2",
 		// UserID:       "2",
 		Notification: dateStart.AddDate(0, -2, 0),
@@ -104,9 +104,9 @@ func TestStorageUpdate(t *testing.T) {
 	event2, err := store.GetEventByID(id2, user2)
 	require.NoError(t, err)
 
-	require.Equal(t, eventToCreate2.DateStart, event2.Date)
+	require.Equal(t, eventToCreate2.Start, event2.Start)
 	require.Equal(t, *eventToUpdate2.Title, event2.Title)
-	require.Equal(t, eventToCreate2.DateEnd, event2.Duration)
+	require.Equal(t, eventToCreate2.End, event2.End)
 	require.Equal(t, *eventToUpdate2.Description, event2.Description)
 	require.Equal(t, user2, event2.UserID)
 	require.Equal(t, eventToCreate2.Notification, event2.Notification)
@@ -119,17 +119,17 @@ func TestStorageDelete(t *testing.T) {
 
 	store := New()
 	eventToCreate1 := storage.EventCreateDTO{
-		DateStart:   dateStart,
+		Start:       dateStart,
 		Title:       "event1",
-		DateEnd:     dateStart.AddDate(0, 0, 3),
+		End:         dateStart.AddDate(0, 0, 3),
 		Description: "description of event 1",
 		// UserID:       "1",
 		Notification: dateStart.AddDate(0, -1, 0),
 	}
 	eventToCreate2 := storage.EventCreateDTO{
-		DateStart:   dateStart,
+		Start:       dateStart,
 		Title:       "event2",
-		DateEnd:     dateStart.AddDate(0, 0, 3),
+		End:         dateStart.AddDate(0, 0, 3),
 		Description: "description of event 2",
 		// UserID:       "2",
 		Notification: dateStart.AddDate(0, -2, 0),
@@ -150,9 +150,9 @@ func TestStorageDelete(t *testing.T) {
 	event2, err := store.GetEventByID(id2, user2)
 	require.NoError(t, err)
 
-	require.Equal(t, eventToCreate2.DateStart, event2.Date)
+	require.Equal(t, eventToCreate2.Start, event2.Start)
 	require.Equal(t, eventToCreate2.Title, event2.Title)
-	require.Equal(t, eventToCreate2.DateEnd, event2.Duration)
+	require.Equal(t, eventToCreate2.End, event2.End)
 	require.Equal(t, eventToCreate2.Description, event2.Description)
 	require.Equal(t, user2, event2.UserID)
 	require.Equal(t, eventToCreate2.Notification, event2.Notification)
@@ -166,25 +166,25 @@ func TestStorageGetEventListing(t *testing.T) {
 	user1 := "1"
 
 	eventToCreate1 := storage.EventCreateDTO{
-		DateStart:   date1,
+		Start:       date1,
 		Title:       "event1",
-		DateEnd:     date1.AddDate(0, 0, 1),
+		End:         date1.AddDate(0, 0, 1),
 		Description: "description of event 1",
 		// UserID:       "1",
 		Notification: date1.AddDate(0, -1, 0),
 	}
 	eventToCreate2 := storage.EventCreateDTO{
-		DateStart:   date2,
+		Start:       date2,
 		Title:       "event2",
-		DateEnd:     date2.AddDate(0, 0, 2),
+		End:         date2.AddDate(0, 0, 2),
 		Description: "description of event 2",
 		// UserID:       "1",
 		Notification: date2.AddDate(0, -2, 0),
 	}
 	eventToCreate3 := storage.EventCreateDTO{
-		DateStart:   date3,
+		Start:       date3,
 		Title:       "event3",
-		DateEnd:     date3.AddDate(0, 0, 3),
+		End:         date3.AddDate(0, 0, 3),
 		Description: "description of event 3",
 		// UserID:       "1",
 		Notification: date3.AddDate(0, -2, 0),

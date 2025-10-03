@@ -1,0 +1,7 @@
+{
+    "logger": {
+        "level": "INFO"
+    },
+    "rabbiturl": "amqp://rmuser:rmpassword@localhost:5672/",
+    "workTicker": "5"
+}

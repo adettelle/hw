@@ -33,8 +33,8 @@ func (s *GRPCServer) AddEventByID(ctx context.Context, in *pb.AddEventByIDReques
 	var response pb.AddEventByIDResponse
 	event := storage.EventCreateDTO{
 		Title:        in.EventCreateDTO.Title,
-		DateStart:    in.EventCreateDTO.StartTime.AsTime(),
-		DateEnd:      in.EventCreateDTO.EndTime.AsTime(),
+		Start:        in.EventCreateDTO.Start.AsTime(),
+		End:          in.EventCreateDTO.End.AsTime(),
 		Description:  in.EventCreateDTO.Description,
 		Notification: in.EventCreateDTO.Notification.AsTime(),
 	}
@@ -54,14 +54,14 @@ func (s *GRPCServer) UpdateEventByID(ctx context.Context,
 	in *pb.UpdateEventByIDRequest,
 ) (*pb.UpdateEventByIDResponse, error) {
 	var response pb.UpdateEventByIDResponse
-	date := in.EventCreateDTO.StartTime.AsTime()
-	duration := in.EventCreateDTO.EndTime.AsTime()
+	start := in.EventCreateDTO.Start.AsTime()
+	end := in.EventCreateDTO.End.AsTime()
 	notification := in.EventCreateDTO.Notification.AsTime()
 
 	event := storage.EventUpdateDTO{
 		Title:        &in.EventCreateDTO.Title,
-		Date:         &date,
-		Duration:     &duration,
+		Start:        &start,
+		End:          &end,
 		Description:  &in.EventCreateDTO.Description,
 		Notification: &notification,
 	}
@@ -107,8 +107,8 @@ func (s *GRPCServer) GetEventListingByUserID(_ context.Context,
 			Title:        e.Title,
 			Description:  e.Description,
 			CreatedAt:    timestamppb.New(e.CreatedAt),
-			StartTime:    timestamppb.New(e.Date),
-			EndTime:      timestamppb.New(e.Duration),
+			Start:        timestamppb.New(e.Start),
+			End:          timestamppb.New(e.End),
 			Notification: timestamppb.New(e.Notification),
 		})
 	}
@@ -130,8 +130,8 @@ func (s *GRPCServer) GetEventByID(_ context.Context, in *pb.GetEventByIDRequest)
 		Id:          e.ID,
 		Title:       e.Title,
 		Description: e.Description,
-		StartTime:   timestamppb.New(e.Date),
-		EndTime:     timestamppb.New(e.Duration),
+		Start:       timestamppb.New(e.Start),
+		End:         timestamppb.New(e.End),
 		CreatedAt:   timestamppb.New(e.CreatedAt),
 	}
 

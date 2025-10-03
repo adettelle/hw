@@ -127,6 +127,12 @@ func (eh *EventHandlers) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if event.End.Before(event.Start) {
+		eh.Logg.Error("event star_time after end_time", zap.Any("start", event.Start), zap.Any("end", event.End))
+		w.WriteHeader(http.StatusBadRequest) // TODO !!!!!
+		return
+	}
+
 	createdID, err := eh.Storager.AddEventByID(context.Background(), event, userID)
 	if err != nil {
 		eh.Logg.Error("error in adding event:", zap.Error(err))
@@ -184,6 +190,12 @@ func (eh *EventHandlers) UpdateEventeByID(w http.ResponseWriter, r *http.Request
 
 	if err = json.Unmarshal(buf.Bytes(), &event); err != nil {
 		eh.Logg.Error("error in unmarshalling json:", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if event.End.Before(*event.Start) {
+		eh.Logg.Error("event star_time after end_time", zap.Any("start", event.Start), zap.Any("end", event.End))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

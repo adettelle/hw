@@ -4,7 +4,27 @@ services:
     image: postgres:latest
     ports:
       - "9999:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - "POSTGRES_PASSWORD=123456"
       - "POSTGRES_USER=postgres"
       - "POSTGRES_DB=test_db"
+
+  rabbitmq:
+    image: rabbitmq:4.1.4-management
+    # hostname: rabbitmq
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672   # основной AMQP-порт для приложений
+      - 15672:15672 # веб-панель RabbitMQ Management
+    volumes: 
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=rmuser # логин по умолчанию
+      - RABBITMQ_DEFAULT_PASS=rmpassword # пароль по умолчанию
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
