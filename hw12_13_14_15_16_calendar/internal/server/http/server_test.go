@@ -13,6 +13,7 @@ import (
 	"github.com/adettelle/hw/hw12_13_14_15_calendar/internal/storage"
 	"github.com/c2fo/testify/require"
 	"github.com/golang/mock/gomock"
+	"go.uber.org/zap"
 )
 
 const layout = "2006-01-02 15:04:05"
@@ -37,8 +38,8 @@ func TestGetEventByID(t *testing.T) {
 	require.NoError(t, err)
 
 	createdAt := baseTime
-	date := createdAt.AddDate(0, 0, 0)
-	duration := createdAt.AddDate(0, 0, 2)
+	start := createdAt.AddDate(0, 0, 0)
+	end := createdAt.AddDate(0, 0, 2)
 	notification := createdAt.AddDate(0, 0, 1)
 
 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, nil)
@@ -52,8 +53,8 @@ func TestGetEventByID(t *testing.T) {
 		ID:           "1",
 		Title:        "title1",
 		CreatedAt:    createdAt,
-		Date:         date,
-		Duration:     duration,
+		Start:        start,
+		End:          end,
 		Description:  "description1",
 		UserID:       "1",
 		Notification: notification,
@@ -73,8 +74,8 @@ func TestGetEventByID(t *testing.T) {
 	require.Equal(t, expectedEvent.ID, actual.ID)
 	require.Equal(t, expectedEvent.Title, actual.Title)
 	require.True(t, expectedEvent.CreatedAt.Equal(actual.CreatedAt))
-	require.True(t, expectedEvent.Date.Equal(actual.Date))
-	require.True(t, expectedEvent.Duration.Equal(actual.Duration))
+	require.True(t, expectedEvent.Start.Equal(actual.Start))
+	require.True(t, expectedEvent.End.Equal(actual.End))
 	require.Equal(t, expectedEvent.Description, actual.Description)
 	require.Equal(t, expectedEvent.UserID, actual.UserID)
 	require.True(t, expectedEvent.Notification.Equal(actual.Notification))
@@ -99,14 +100,14 @@ func TestAddEventByID(t *testing.T) {
 	require.NoError(t, err)
 
 	createdAt := baseTime
-	date := createdAt.AddDate(0, 0, 0)
-	duration := createdAt.AddDate(0, 0, 2)
+	start := createdAt.AddDate(0, 0, 0)
+	end := createdAt.AddDate(0, 0, 2)
 	notification := createdAt.AddDate(0, 0, 1)
 
 	event := storage.EventCreateDTO{
 		Title:        "title1",
-		DateStart:    date,
-		DateEnd:      duration,
+		Start:        start,
+		End:          end,
 		Description:  "description1",
 		Notification: notification,
 	}
@@ -158,6 +159,7 @@ func TestUpdateEventByID(t *testing.T) {
 	require.NoError(t, err)
 
 	date := baseTime.AddDate(0, 0, 0)
+	dateEnd := baseTime.AddDate(0, 0, 1)
 
 	title := "new_title"
 	description := "new_description"
@@ -165,7 +167,8 @@ func TestUpdateEventByID(t *testing.T) {
 	event := storage.EventUpdateDTO{
 		Title:       &title,
 		Description: &description,
-		Date:        &date,
+		Start:       &date,
+		End:         &dateEnd,
 	}
 
 	jsonData, err := json.Marshal(event)
@@ -184,6 +187,62 @@ func TestUpdateEventByID(t *testing.T) {
 
 	// expectedID := "1"
 	m.EXPECT().UpdateEventByID(context.Background(), eventID, event, userID).Return(nil) // expectedID
+
+	eh.UpdateEventeByID(response, request)
+
+	require.Equal(t, wantHTTPStatus, response.Code)
+}
+
+func TestUpdateEventWithWrongEndDate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStorage := mocks.NewMockStorager(ctrl)
+	l, err := zap.NewDevelopment()
+	require.NoError(t, err)
+	eh := &EventHandlers{
+		Storager: mockStorage,
+		Logg:     l,
+	}
+
+	m := eh.Storager.(*mocks.MockStorager)
+
+	userID := "1"
+	eventID := "1"
+	reqURL := "/update/user/1/event/1"
+
+	baseTime, err := time.ParseInLocation(layout, "2025-09-19 13:01:45", time.UTC)
+	require.NoError(t, err)
+
+	date := baseTime.AddDate(0, 0, 0)
+	dateEnd := baseTime.AddDate(0, 0, -1)
+
+	title := "new_title"
+	description := "new_description"
+
+	event := storage.EventUpdateDTO{
+		Title:       &title,
+		Description: &description,
+		Start:       &date,
+		End:         &dateEnd,
+	}
+
+	jsonData, err := json.Marshal(event)
+	require.NoError(t, err)
+	reqBody := string(jsonData)
+	wantHTTPStatus := 400
+
+	request, err := http.NewRequestWithContext(
+		context.Background(), http.MethodPost, reqURL, strings.NewReader(reqBody),
+	)
+	require.NoError(t, err)
+	request.SetPathValue("userid", "1")
+	request.SetPathValue("id", "1")
+
+	response := httptest.NewRecorder()
+
+	// expectedID := "1"
+	m.EXPECT().UpdateEventByID(context.Background(), eventID, event, userID).Times(0) // expectedID
 
 	eh.UpdateEventeByID(response, request)
 
@@ -241,8 +300,8 @@ func TestGetEventListByID(t *testing.T) {
 	require.NoError(t, err)
 
 	createdAt := baseTime
-	date := createdAt.AddDate(0, 0, 0)
-	duration := createdAt.AddDate(0, 0, 2)
+	start := createdAt.AddDate(0, 0, 0)
+	end := createdAt.AddDate(0, 0, 2)
 	notification := createdAt.AddDate(0, 0, 1)
 
 	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, nil)
@@ -257,8 +316,8 @@ func TestGetEventListByID(t *testing.T) {
 		ID:           "1",
 		Title:        "title1",
 		CreatedAt:    createdAt,
-		Date:         date,
-		Duration:     duration,
+		Start:        start,
+		End:          end,
 		Description:  "description1",
 		UserID:       userID,
 		Notification: notification,
@@ -267,8 +326,8 @@ func TestGetEventListByID(t *testing.T) {
 		ID:           "2",
 		Title:        "title2",
 		CreatedAt:    createdAt.Add(time.Hour),
-		Date:         date.Add(5 * time.Hour),
-		Duration:     duration,
+		Start:        start.Add(5 * time.Hour),
+		End:          end,
 		Description:  "description2",
 		UserID:       userID,
 		Notification: notification,

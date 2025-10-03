@@ -31,11 +31,12 @@ func (s *Storage) AddEventByID(_ context.Context,
 		ID:           id,
 		Title:        ec.Title,
 		CreatedAt:    time.Now(),
-		Date:         ec.DateStart,
-		Duration:     ec.DateEnd,
+		Start:        ec.Start,
+		End:          ec.End,
 		Description:  ec.Description,
 		UserID:       userID,
 		Notification: ec.Notification,
+		Notified:     ec.Notified,
 	}
 	s.Events[id] = event
 	return id, nil
@@ -56,17 +57,20 @@ func (s *Storage) UpdateEventByID(_ context.Context, id string,
 	if event.Title != nil {
 		e.Title = *event.Title
 	}
-	if event.Date != nil {
-		e.Date = *event.Date
+	if event.Start != nil {
+		e.Start = *event.Start
 	}
-	if event.Duration != nil {
-		e.Duration = *event.Duration
+	if event.End != nil {
+		e.End = *event.End
 	}
 	if event.Description != nil {
 		e.Description = *event.Description
 	}
 	if event.Notification != nil {
 		e.Notification = *event.Notification
+	}
+	if !event.Notified {
+		e.Notified = true
 	}
 
 	s.Events[id] = e
@@ -118,7 +122,7 @@ func (s *Storage) GetEventListingByUserID(userID string, date time.Time, period 
 	}
 
 	for _, event := range s.Events {
-		if event.Date.After(start) && event.Date.Before(end) && event.UserID == userID {
+		if event.Start.After(start) && event.Start.Before(end) && event.UserID == userID {
 			result = append(result, event)
 		}
 	}
@@ -160,4 +164,17 @@ func (s *Storage) GetEventByID(id string, _ string) (storage.Event, error) { // 
 		return storage.Event{}, fmt.Errorf("no evend with id %s", id)
 	}
 	return event, nil
+}
+
+func (s *Storage) SetNotified(_ context.Context, _ []string) ([]string, error) {
+	return nil, nil
+}
+
+func (s *Storage) CollectEventsToNotify(_ context.Context) ([]storage.EventToNotify, error) {
+	var events []storage.EventToNotify
+	return events, nil
+}
+
+func (s *Storage) DeleteEvents(_ context.Context) error {
+	return nil
 }

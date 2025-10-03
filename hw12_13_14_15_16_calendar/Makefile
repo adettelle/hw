@@ -1,4 +1,4 @@
-BIN := "./bin/calendar"
+BIN := "./bin"
 DOCKER_IMG="calendar:develop"
 PROTO_DIR := "./api/proto"
 OUT_DIR := api
@@ -8,8 +8,16 @@ LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%d
 
 DB="postgresql://postgres:123456@localhost:9999/test_db?sslmode=disable"
 
-build:
-	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
+build_calendar:
+	go build -v -o "$(BIN)/calendar" -ldflags "$(LDFLAGS)" ./cmd/calendar
+
+build_scheduler:
+	go build -v -o "$(BIN)/calendar_scheduler" -ldflags "$(LDFLAGS)" ./cmd/calendar_scheduler
+
+build_sender:
+	go build -v -o "$(BIN)/calendar_sender" -ldflags "$(LDFLAGS)" ./cmd/calendar_sender
+
+build: build_calendar build_scheduler build_sender
 
 run: build
 	$(BIN) -config ./configs/config.toml

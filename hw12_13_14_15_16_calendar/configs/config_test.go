@@ -11,7 +11,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	ctx := context.Background()
-	cfg, err := New(&ctx, true, "./cfg.json")
+	cfg, err := New(&ctx, true, "./calendar_cfg.json")
 	require.NoError(t, err)
 
 	require.Equal(t, "INFO", cfg.Logger.Level)

@@ -1,0 +1,12 @@
+{
+    "logger": {
+        "level": "INFO"
+    },
+    "dbhost": "localhost",
+    "dbport": "9999",
+    "dbuser": "postgres",
+    "dbpassword": "123456",
+    "dbname": "test_db",
+    "rabbiturl": "amqp://rmuser:rmpassword@localhost:5672/",
+    "collectTicker": "5"
+}
