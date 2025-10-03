@@ -232,9 +232,8 @@ func (s *DBStorage) SetNotified(ctx context.Context, ids []string) ([]string, er
 	}
 	s.Logg.Info("setting notified events.", zap.Int("amount", len(ids)))
 
-	sqlSt := fmt.Sprintf(`update event set notified = true 
-		where account_id = 1 and id in (%s) returning id;`, strings.Join(ids, ", ")) //nolint:gosec
-
+	sqlBase := `update event set notified = true where account_id = 1 `
+	sqlSt := sqlBase + fmt.Sprintf("and id in (%s) returning id;", strings.Join(ids, ", "))
 	rows, err := s.DB.QueryContext(ctx, sqlSt)
 	if err != nil || rows.Err() != nil {
 		return nil, err

@@ -30,6 +30,13 @@ type Notification struct {
 }
 
 func main() {
+	err := initialize()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initialize() error {
 	startCtx := context.Background()
 	ctx, cancel := signal.NotifyContext(startCtx,
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -37,7 +44,7 @@ func main() {
 
 	config, err := configs.New(&startCtx, "./configs/scheduler/scheduler_cfg.json")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	encoderCfg := zap.NewProductionEncoderConfig()
@@ -47,7 +54,7 @@ func main() {
 		logLevel, err = zapcore.ParseLevel(config.Logger.Level)
 		if err != nil {
 			log.Println("unable to set level")
-			log.Fatal(err)
+			return err
 		}
 	}
 
@@ -63,13 +70,15 @@ func main() {
 	// Создаем подключение к RabbitMQ
 	conn, err := amqp.Dial(config.RabbitURL) // "amqp://rmuser:rmpassword@localhost:5672/"
 	if err != nil {
-		logg.Fatal("Failed to connect to RabbitMQ", zap.Error(err))
+		logg.Error("Failed to connect to RabbitMQ", zap.Error(err))
+		return err
 	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
-		logg.Fatal("Failed to open a channel", zap.Error(err))
+		logg.Error("Failed to open a channel", zap.Error(err))
+		return err
 	}
 	defer ch.Close()
 
@@ -83,19 +92,22 @@ func main() {
 		nil,     // arguments
 	)
 	if err != nil {
-		logg.Fatal("Failed to declare a queue", zap.Error(err))
+		logg.Error("Failed to declare a queue", zap.Error(err))
+		return err
 	}
 
 	// ----------------------------------
 
 	planner, err := initStorager(config, logg)
 	if err != nil {
-		logg.Fatal("failed to initialize storager", zap.Error(err))
+		logg.Error("failed to initialize storager", zap.Error(err))
+		return err
 	}
 
 	t, err := strconv.Atoi(config.CollectTicker)
 	if err != nil {
 		logg.Error("failed to parsecworkTicker", zap.Error(err))
+		return err
 	}
 
 	ticker := time.NewTicker(time.Duration(t) * time.Second)
@@ -109,21 +121,23 @@ func main() {
 			events, err := collectEvents(ctxPlanner, planner)
 			if err != nil {
 				logg.Error("failed to collect events", zap.Error(err))
-			}
-			ids, err := sendEvents(ctx, events, ch, q, logg)
-			if err != nil {
-				logg.Error("failed to send events", zap.Error(err))
-			}
-			_, err = planner.SetNotified(ctxPlanner, ids)
-			if err != nil {
-				logg.Error("failed to notify events", zap.Error(err))
+			} else {
+				ids, err := sendEvents(ctx, events, ch, q, logg)
+				if err != nil {
+					logg.Error("failed to send events", zap.Error(err))
+				}
+
+				_, err = planner.SetNotified(ctxPlanner, ids)
+				if err != nil {
+					logg.Error("failed to notify events", zap.Error(err))
+				}
 			}
 			err = planner.DeleteEvents(ctxPlanner)
 			if err != nil {
 				logg.Error("failed to delete events", zap.Error(err))
 			}
 		case <-ctx.Done():
-			return
+			return err
 		}
 	}
 }
