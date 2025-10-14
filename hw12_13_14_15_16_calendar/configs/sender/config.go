@@ -37,7 +37,7 @@ type LoggerConf struct {
 	Level string `json:"level"`
 }
 
-// далее проверяем, если есть json файл и заполняем структкуру конфига оттуда;
+// проверяем, если есть json файл и заполняем структкуру конфига оттуда;
 // далее проверяем, если поле не заполнено, заполняем по default.
 func New(ctx *context.Context, jsonPath string) (*Config, error) {
 	cfg := Config{

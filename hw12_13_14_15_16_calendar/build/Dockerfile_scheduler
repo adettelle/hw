@@ -1,0 +1,40 @@
+FROM golang:1.24.0 as build
+
+# путь и имя конечного скомпилированного бинарного файла
+ENV BIN_FILE /opt/calendar/calendar-scheduler
+# директория внутри контейнера, где будет находиться исходный код
+ENV CODE_DIR /scheduler
+
+# Устанавливает рабочую директорию внутри контейнера на ${CODE_DIR}. 
+# Все последующие команды будут выполняться оттуда
+WORKDIR ${CODE_DIR}
+
+# Кэшируем слои с модулями
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+# Копирует весь исходный код проекта в рабочую директорию внутри контейнера
+COPY . ${CODE_DIR}
+
+# Собираем статический бинарник Go (без зависимостей на Си API),
+# иначе он не будет работать в alpine образе.
+ARG LDFLAGS
+RUN CGO_ENABLED=0 go build \
+        -ldflags "$d" \
+        -o ${BIN_FILE} cmd/calendar_scheduler/*
+
+# На выходе тонкий образ
+FROM alpine:3.22
+
+LABEL ORGANIZATION="OTUS Online Education"
+LABEL SERVICE="sender"
+LABEL MAINTAINERS="adettelle"
+
+ENV BIN_FILE "/opt/calendar/scheduler"
+COPY --from=build ${BIN_FILE} ${BIN_FILE}
+
+ENV CONFIG_FILE /configs/scheduler/scheduler_cfg.json
+COPY ./configs/scheduler_cfg.json ${CONFIG_FILE}
+
+CMD ${BIN_FILE} -config ${CONFIG_FILE}

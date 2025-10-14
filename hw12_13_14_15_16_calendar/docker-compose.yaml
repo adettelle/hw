@@ -25,6 +25,33 @@ services:
       - RABBITMQ_DEFAULT_USER=rmuser # логин по умолчанию
       - RABBITMQ_DEFAULT_PASS=rmpassword # пароль по умолчанию
 
+  calendar:
+    build: 
+      context: .
+      dockerfile: ./build/Dockerfile_calendar
+    ports:
+      - 8081:8081
+    environment:
+      - DBHOST=postgres
+      - DBPORT=5432
+      - DBNAME=test_db
+    depends_on:
+      - postgres
+
+  sender:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile_sender
+    environment:
+      - RURL=amqp://rmuser:rmpassword@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+
+  # scheduler:
+  #   build: .
+  #   ports:
+  #     - 8081:8081
+
 volumes:
   postgres_data:
   rabbitmq_data:
