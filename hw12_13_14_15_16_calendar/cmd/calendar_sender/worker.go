@@ -32,11 +32,37 @@ func main() {
 		}
 	}
 
-	logg := zap.New(zapcore.NewCore(
+	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderCfg),
 		zapcore.Lock(os.Stdout),
 		zap.NewAtomicLevelAt(logLevel),
-	))
+	)
+
+	fileForLog, err := os.OpenFile("/var/log/sender.log",
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		log.Println("Failed to create file")
+		log.Fatal(err)
+	}
+	defer fileForLog.Close()
+
+	fileCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.AddSync(fileForLog),
+		zap.NewAtomicLevelAt(logLevel),
+	)
+
+	var logg *zap.Logger
+	// add DEBUG config param default false
+	// logg = if DEBUG==true logg = logg := zap.New(zapcore.NewTee(core, fileCore))
+	// else logg = zap.New(core)
+	if config.Debug == "true" {
+		logg = zap.New(zapcore.NewTee(core, fileCore))
+	} else {
+		logg = zap.New(core)
+	}
+
+	// logg := zap.New(zapcore.NewTee(core, fileCore)) //zap.New(core)
 	logg.Info("LEVELS", zap.String("cfgLevel", config.Logger.Level), zap.String("actualLevel", logg.Level().String()))
 	defer logg.Sync()
 
@@ -85,6 +111,6 @@ func main() {
 	defer ticker.Stop()
 
 	for d := range msg {
-		log.Printf("Received a message: %s", d.Body)
+		logg.Info("Received a message", zap.ByteString("message", d.Body))
 	}
 }

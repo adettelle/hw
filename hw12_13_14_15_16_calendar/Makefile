@@ -35,7 +35,7 @@ version: build
 	$(BIN) version
 
 test:
-	go test -race ./...
+	go test -race $(shell go list ./... | grep -v /integration_tests)
 
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.4.0
@@ -59,3 +59,22 @@ generate:
 		--go_out=paths=source_relative:$(OUT_DIR) \
   		--go-grpc_out=paths=source_relative:$(OUT_DIR) \
   		./api/proto/event.proto ./api/proto/event_service.proto  
+
+# разворачивание и запуск
+up: 
+	docker compose up --build --force-recreate
+
+up-calendar:
+	docker compose up calendar -d --build
+
+up-sender:
+	docker compose up sender -d --build
+
+up-scheduler:
+	docker compose up scheduler -d --build
+
+down:
+	docker compose down
+
+integration-tests:
+	docker compose -f ./docker-compose-test.yaml up --build integration-tests --force-recreate

@@ -10,7 +10,7 @@ import (
 )
 
 func Connect(dbParams string) (*sql.DB, error) {
-	log.Println("Connecting to DB") // , dbParams
+	log.Println("Connecting to DB", dbParams)
 	db, err := sql.Open("pgx", dbParams)
 	if err != nil {
 		return nil, err

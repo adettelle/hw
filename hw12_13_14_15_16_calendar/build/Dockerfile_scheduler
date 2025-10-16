@@ -1,9 +1,9 @@
-FROM golang:1.24.0 as build
+FROM golang:1.24.0 AS build
 
 # путь и имя конечного скомпилированного бинарного файла
 ENV BIN_FILE /opt/calendar/calendar-scheduler
 # директория внутри контейнера, где будет находиться исходный код
-ENV CODE_DIR /scheduler
+ENV CODE_DIR /go/src/
 
 # Устанавливает рабочую директорию внутри контейнера на ${CODE_DIR}. 
 # Все последующие команды будут выполняться оттуда
@@ -31,10 +31,10 @@ LABEL ORGANIZATION="OTUS Online Education"
 LABEL SERVICE="sender"
 LABEL MAINTAINERS="adettelle"
 
-ENV BIN_FILE "/opt/calendar/scheduler"
+ENV BIN_FILE "/opt/calendar/calendar-scheduler"
 COPY --from=build ${BIN_FILE} ${BIN_FILE}
 
 ENV CONFIG_FILE /configs/scheduler/scheduler_cfg.json
-COPY ./configs/scheduler_cfg.json ${CONFIG_FILE}
+COPY ./configs/scheduler/scheduler_cfg.json ${CONFIG_FILE}
 
 CMD ${BIN_FILE} -config ${CONFIG_FILE}

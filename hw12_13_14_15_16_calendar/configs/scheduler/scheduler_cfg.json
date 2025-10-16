@@ -2,8 +2,8 @@
     "logger": {
         "level": "INFO"
     },
-    "dbhost": "localhost",
-    "dbport": "9999",
+    "dbhost": "postgres",
+    "dbport": "5432",
     "dbuser": "postgres",
     "dbpassword": "123456",
     "dbname": "test_db",

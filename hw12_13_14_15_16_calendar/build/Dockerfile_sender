@@ -1,4 +1,4 @@
-FROM golang:1.24.0 as build
+FROM golang:1.24.0 AS build
 
 # путь и имя конечного скомпилированного бинарного файла
 ENV BIN_FILE /opt/calendar/calendar-sender
@@ -31,7 +31,6 @@ LABEL ORGANIZATION="OTUS Online Education"
 LABEL SERVICE="sender"
 LABEL MAINTAINERS="adettelle"
 
-# папка opt в системе всегда есть, можно посмотреть ls /
 ENV BIN_FILE "/opt/calendar/calendar-sender"
 COPY --from=build ${BIN_FILE} ${BIN_FILE}
 
