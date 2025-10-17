@@ -18,6 +18,7 @@ const (
 	defaultDBName      = "calendar"
 	defaultRabbitmqURL = "amqp://rmuser:rmpassword@localhost:5672/"
 	defaultWokrTicker  = "5"
+	defaultDebug       = "false"
 )
 
 type Config struct {
@@ -31,13 +32,14 @@ type Config struct {
 	DBName     string `json:"dbname"`
 	RabbitURL  string `json:"rabbiturl"`
 	WorkTicker string `json:"workticker"`
+	Debug      string `json:"debug"`
 }
 
 type LoggerConf struct {
 	Level string `json:"level"`
 }
 
-// далее проверяем, если есть json файл и заполняем структкуру конфига оттуда;
+// проверяем, если есть json файл и заполняем структкуру конфига оттуда;
 // далее проверяем, если поле не заполнено, заполняем по default.
 func New(ctx *context.Context, jsonPath string) (*Config, error) {
 	cfg := Config{
@@ -52,6 +54,7 @@ func New(ctx *context.Context, jsonPath string) (*Config, error) {
 		DBName:     getEnvOrDefault("DBNAME", defaultDBName),
 		RabbitURL:  getEnvOrDefault("RURL", defaultRabbitmqURL),
 		WorkTicker: getEnvOrDefault("WTICKER", defaultWokrTicker),
+		Debug:      getEnvOrDefault("DEBUG", defaultDebug),
 	}
 	cfgFromJSON, err := configs.ReadCfgJSON[Config](jsonPath)
 	if err != nil {
@@ -134,11 +137,10 @@ func getEnvOrDefault(envName string, defaultVal string) string {
 func ensureHostFlagIsCorrect(ctx context.Context, host string) {
 	resolver := net.Resolver{}
 
-	addrs, err := resolver.LookupHost(ctx, host)
+	_, err := resolver.LookupHost(ctx, host)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("host in ensureHostFlagIsCorrect:", addrs)
 }
 
 func ensurePortFlagIsCorrect(port string) {

@@ -135,11 +135,10 @@ func getEnvOrDefault(envName string, defaultVal string) string {
 func ensureHostFlagIsCorrect(ctx context.Context, host string) {
 	resolver := net.Resolver{}
 
-	addrs, err := resolver.LookupHost(ctx, host)
+	_, err := resolver.LookupHost(ctx, host)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("host in ensureHostFlagIsCorrect:", addrs)
 }
 
 func ensurePortFlagIsCorrect(port string) {

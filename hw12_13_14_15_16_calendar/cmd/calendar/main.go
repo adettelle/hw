@@ -34,7 +34,7 @@ func initialize() error {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	config, err := configs.New(&startCtx, true, "./configs/calendar_cfg.json")
+	config, err := configs.New(&startCtx)
 	if err != nil {
 		return err
 	}

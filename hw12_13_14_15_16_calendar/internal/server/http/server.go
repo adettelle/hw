@@ -41,6 +41,7 @@ func NewServer(cfg *configs.Config, logg *zap.Logger, _ Application, storager ap
 }
 
 func (s *Server) Start(ctx context.Context, logg *zap.Logger) error {
+	logg.Info("starting http server at", zap.String("address", s.srv.Addr))
 	if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logg.Fatal("server failed: %v", zap.Any("err", err))
 	}

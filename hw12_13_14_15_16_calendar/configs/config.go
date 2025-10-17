@@ -10,14 +10,18 @@ import (
 	"strconv"
 )
 
+// флаг только -config
+// если он есть, то конфиг файл + default
+// если нет такого флага, то env + default
+
 const (
-	defaultAddress     = "localhost:8080"
+	defaultAddress     = "localhost:8081"
 	defaultGRPCAddress = "localhost:8082"
 	defaultDBHost      = "localhost"
 	defaultDBPort      = "9999"
 	defaultDBUser      = "postgres"
 	defaultDBPassword  = "123456"
-	defaultDBName      = "calendar"
+	defaultDBName      = "test_db" // calendar
 )
 
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
@@ -39,54 +43,47 @@ type LoggerConf struct {
 	Level string `json:"level"`
 }
 
-func InitFlags() *Config {
-	flagAddr := flag.String("a", "", "Net address localhost:port")
-	flagGRPCAddr := flag.String("g", "", "Net grpc address localhost:port")
+func New(ctx *context.Context) (*Config, error) {
+	var cfg *Config
+
 	flagConfig := flag.String("config", "", "path to file with config parametrs")
-
-	flagDBHost := flag.String("h", "", "dbhost")
-	flagDBPort := flag.String("p", "", "dbport")
-	flagDBUser := flag.String("u", "", "db user")
-	flagDBPassword := flag.String("password", "", "db password")
-	flagDBName := flag.String("n", "", "db name")
-
 	flag.Parse()
 
-	cfg := Config{
-		Logger: &LoggerConf{
-			Level: "INFO",
-		},
-		Address:     getEnvOrDefault("ADDRESS", flagAddr),
-		GRPCAddress: getEnvOrDefault("GRPCAddress", flagGRPCAddr),
-		Config:      getEnvOrDefault("CONFIG", flagConfig),
-
-		DBHost:     getEnvOrDefault("DBHOST", flagDBHost),
-		DBPort:     getEnvOrDefault("DBPORT", flagDBPort),
-		DBUser:     getEnvOrDefault("DBUSER", flagDBUser),
-		DBPassword: getEnvOrDefault("DBPASSWORD", flagDBPassword),
-		DBName:     getEnvOrDefault("DBNAME", flagDBName),
-	}
-	return &cfg
-}
-
-// приоритет:
-// сначала проверяем флаги и заполняем структуру конфига оттуда;
-// потом проверяем переменные окружения и перезаписываем структуру конфига оттуда;
-// далее проверяем, если есть json файл и дополняем структкуру конфига оттуда;
-// далее проверяем, если поле не заполнено, заполняем по default.
-func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, error) {
-	cfg := newConfigFromFlag(ignoreFlags, jsonPath)
-
-	if cfg.Config != "" {
-		cfgFromJSON, err := ReadCfgJSON[Config](cfg.Config)
+	if *flagConfig != "" {
+		cfgFromJSON, err := ReadCfgJSON[Config](*flagConfig)
 		if err != nil {
 			return nil, err
 		}
-		cfg.applyConfigFromJSON(cfgFromJSON)
-	}
-	cfg.Context = ctx
+		cfgFromJSON.applyDefauls()
+		cfgFromJSON.Context = ctx
 
-	cfg.applyDefauls()
+		ensureAddrFLagIsCorrect(cfgFromJSON.Address)
+		ensureAddrFLagIsCorrect(cfgFromJSON.GRPCAddress)
+		ensureHostFlagIsCorrect(*cfgFromJSON.Context, cfgFromJSON.DBHost)
+		ensurePortFlagIsCorrect(cfgFromJSON.DBPort)
+
+		ensureAddrFLagIsCorrect(cfgFromJSON.Address)
+		ensureAddrFLagIsCorrect(cfgFromJSON.GRPCAddress)
+		ensureHostFlagIsCorrect(*cfgFromJSON.Context, cfgFromJSON.DBHost)
+		ensurePortFlagIsCorrect(cfgFromJSON.DBPort)
+		return cfgFromJSON, nil
+	}
+	cfg = &Config{
+		Logger: &LoggerConf{
+			Level: "INFO",
+		},
+		Address:     getEnvOrDefault("ADDR", defaultAddress),
+		GRPCAddress: getEnvOrDefault("GRPCADDR", defaultGRPCAddress),
+		Config:      "", // *flagConfig,
+
+		DBHost:     getEnvOrDefault("DBHOST", defaultDBHost),
+		DBPort:     getEnvOrDefault("DBPORT", defaultDBPort),
+		DBUser:     getEnvOrDefault("DBUSER", defaultDBUser),
+		DBPassword: getEnvOrDefault("DBPASSWORD", defaultDBPassword),
+		DBName:     getEnvOrDefault("DBNAME", defaultDBName),
+	}
+
+	cfg.Context = ctx
 
 	ensureAddrFLagIsCorrect(cfg.Address)
 	ensureAddrFLagIsCorrect(cfg.GRPCAddress)
@@ -94,18 +91,6 @@ func New(ctx *context.Context, ignoreFlags bool, jsonPath string) (*Config, erro
 	ensurePortFlagIsCorrect(cfg.DBPort)
 
 	return cfg, nil
-}
-
-// сначала проверяем флаги и заполняем структуру конфига оттуда.
-func newConfigFromFlag(ignoreFlags bool, jsonPath string) *Config {
-	var cfg *Config
-
-	if !ignoreFlags {
-		cfg = InitFlags()
-	} else {
-		cfg = &Config{Config: jsonPath}
-	}
-	return cfg
 }
 
 // заполняем структуру конфига из default.
@@ -135,40 +120,13 @@ func (cfg *Config) applyDefauls() {
 	}
 }
 
-// проверяем, если есть json файл и дополняем структкуру конфига оттуда.
-func (cfg *Config) applyConfigFromJSON(cfgFromJSON *Config) {
-	if cfg.Address == "" {
-		cfg.Address = cfgFromJSON.Address
-	}
-	if cfg.GRPCAddress == "" {
-		cfg.GRPCAddress = cfgFromJSON.GRPCAddress
-	}
-	if cfg.DBHost == "" {
-		cfg.DBHost = cfgFromJSON.DBHost
-	}
-	if cfg.DBPort == "" {
-		cfg.DBPort = cfgFromJSON.DBPort
-	}
-	if cfg.DBUser == "" {
-		cfg.DBUser = cfgFromJSON.DBUser
-	}
-	if cfg.DBName == "" {
-		cfg.DBName = cfgFromJSON.DBName
-	}
-	if cfg.DBPassword == "" {
-		cfg.DBPassword = cfgFromJSON.DBPassword
-	}
-	if cfg.Logger == nil {
-		cfg.Logger = cfgFromJSON.Logger
-	}
-}
-
-func getEnvOrDefault(envName string, defaultVal *string) string {
+func getEnvOrDefault(envName string, defaultVal string) string {
 	res := os.Getenv(envName)
+
 	if res != "" {
 		return res
 	}
-	return *defaultVal
+	return defaultVal
 }
 
 func ensureAddrFLagIsCorrect(addr string) {
@@ -186,11 +144,10 @@ func ensureAddrFLagIsCorrect(addr string) {
 func ensureHostFlagIsCorrect(ctx context.Context, host string) {
 	resolver := net.Resolver{}
 
-	addrs, err := resolver.LookupHost(ctx, host)
+	_, err := resolver.LookupHost(ctx, host)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("host in ensureHostFlagIsCorrect:", addrs)
 }
 
 func ensurePortFlagIsCorrect(port string) {

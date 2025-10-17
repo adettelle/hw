@@ -4,15 +4,15 @@ import "time"
 
 type Event struct {
 	ID           string
-	Title        string
-	CreatedAt    time.Time
-	Start        time.Time // Дата и время события;
-	End          time.Time // дата и время окончания (Длительность события);
-	Description  string    // Описание события - длинный текст, опционально;
-	UserID       string    // ID пользователя, владельца события;
-	Notification time.Time
+	Title        string    `json:"title" validate:"required,min=1"`
+	CreatedAt    time.Time `json:"createdAt"`
+	Start        time.Time `json:"dateStart" validate:"required"` // Дата и время события;
+	End          time.Time `json:"dateEnd" validate:"required"`   // дата и время окончания (Длительность события);
+	Description  string    `json:"description"`                   // Описание события - длинный текст, опционально;
+	UserID       string    `json:"userId"`                        // ID пользователя, владельца события;
+	Notification time.Time `json:"notification"`
 	// (дата и время, когда высылать уведомление) За сколько времени высылать уведомление
-	Notified bool
+	Notified bool `json:"notified"`
 }
 
 type EventCreateDTO struct {

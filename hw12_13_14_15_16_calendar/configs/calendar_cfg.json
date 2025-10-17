@@ -2,9 +2,9 @@
     "logger": {
         "level": "INFO"
     },
-    "address": "localhost:8081",
-    "dbhost": "localhost",
-    "dbport": "9999",
+    "address": "0.0.0.0:8081",
+    "dbhost": "postgres",
+    "dbport": "5432",
     "dbuser": "postgres",
     "dbpassword": "123456",
     "dbname": "test_db",
