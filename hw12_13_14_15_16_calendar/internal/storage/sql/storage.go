@@ -165,7 +165,7 @@ const (
 // получить список событий на день/неделю/месяц.
 func (s *DBStorage) GetEventListingByUserID(userID string, date time.Time, period string) ([]storage.Event, error) {
 	events := []storage.Event{}
-
+	fmt.Println(" !!!!!!!! date:", date)
 	var sqlSt string
 
 	switch period {

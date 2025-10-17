@@ -77,4 +77,4 @@ down:
 	docker compose down
 
 integration-tests:
-	docker compose -f ./docker-compose-test.yaml up --build integration-tests --force-recreate
+	docker compose -f ./docker-compose-test.yaml up integration-tests --build && docker compose -f ./docker-compose-test.yaml down --volumes

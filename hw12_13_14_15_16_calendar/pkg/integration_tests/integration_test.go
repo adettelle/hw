@@ -263,7 +263,7 @@ func TestPutAndGetListOfEventsForDayAndCheckNotification(t *testing.T) {
 		require.Equal(t, http.StatusOK, res.StatusCode())
 
 		resultBody := res.Result().(*map[string]any)
-		val, ok := (*resultBody)["Notified"]
+		val, ok := (*resultBody)["notified"]
 		require.True(t, ok)
 		require.Equal(t, true, val)
 	}

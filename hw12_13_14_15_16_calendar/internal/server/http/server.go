@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -244,6 +245,9 @@ func (eh *EventHandlers) GetEventListingByUserID(w http.ResponseWriter, r *http.
 			return
 		}
 	}
+
+	fmt.Println(" ~~~~~~~~~~~~~~~~~~~~ parsedTime:", parsedTime)
+	eh.Logg.Info(" ~~~~~~~~~~~~~~~~~~~~ parsedTime:", zap.Any("parsedTime", parsedTime))
 
 	events, err := eh.Storager.GetEventListingByUserID(userID, parsedTime, period)
 	if err != nil {

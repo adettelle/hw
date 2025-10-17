@@ -4,8 +4,14 @@ services:
     image: postgres:latest
     ports:
       - "9999:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./create_db.sql:/docker-entrypoint-initdb.d/create_database.sql
     environment:
       - "POSTGRES_PASSWORD=123456"
       - "POSTGRES_USER=postgres"
@@ -40,8 +46,11 @@ services:
       - DBHOST=postgres
       - DBPORT=5432
       - DBNAME=test_db
+      - ADDR=0.0.0.0:8081
+      - GRPCADDR=0.0.0.0:8082
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   sender:
     build:
@@ -64,7 +73,7 @@ services:
       - RURL=amqp://rmuser:rmpassword@rabbitmq:5672
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
