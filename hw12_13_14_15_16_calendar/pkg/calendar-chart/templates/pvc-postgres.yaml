@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fullname" . }}-pgdata
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgres.persistentVolume.size }}
+  {{- if .Values.postgres.persistentVolume.storageClassName }}
+  storageClassName: "{{ .Values.postgres.persistentVolume.storageClassName }}"
+  {{- end }}

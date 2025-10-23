@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fullname" . }}-sender
+spec:
+  replicas: {{ .Values.sender.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "fullname" . }}-sender
+  template:
+    metadata:
+      labels:
+        app: {{ include "fullname" . }}-sender
+    spec:
+      containers:
+        - name: sender
+          image: "{{ .Values.sender.image.repository }}:{{ .Values.sender.image.tag }}"
+          imagePullPolicy: {{ .Values.sender.image.pullPolicy }}
+          env:
+            - name: RURL
+              value: "{{ .Values.sender.env.RURL }}"

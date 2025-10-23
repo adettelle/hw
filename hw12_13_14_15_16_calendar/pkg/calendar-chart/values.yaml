@@ -1,0 +1,77 @@
+namespace: default
+
+# Images for components. 
+api:
+  replicaCount: 1
+  image:
+    repository: calendar
+    tag: latest
+    pullPolicy: IfNotPresent
+  ports:
+    http: 8081
+    grpc: 8082
+  env:
+    # DBHOST: postgres
+    DBHOST: calendar-calendar-chart-postgres
+    DBPORT: "5432"
+    DBNAME: test_db
+    ADDR: "0.0.0.0:8081"
+    GRPCADDR: "0.0.0.0:8082"
+
+scheduler:
+  replicaCount: 1
+  image:
+    repository: scheduler
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    # DBHOST: postgres
+    DBHOST: calendar-calendar-chart-postgres
+    DBPORT: "5432"
+    DBNAME: test_db
+    # RURL: "amqp://rmuser:rmpassword@rabbitmq:5672"
+    RURL: "amqp://rmuser:rmpassword@calendar-calendar-chart-rabbitmq:5672"
+
+sender:
+  replicaCount: 1
+  image:
+    repository: sender
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    # RURL: "amqp://rmuser:rmpassword@rabbitmq:5672"
+    RURL: "amqp://rmuser:rmpassword@calendar-calendar-chart-rabbitmq:5672"
+
+postgres:
+  image: postgres:14
+  port: 5432
+  username: postgres
+  password: "123456"
+  database: test_db
+  persistentVolume:
+    enabled: true
+    storageClassName: ""  # оставить пустым для дефолтного
+    size: 5Gi
+
+rabbitmq:
+  image: rabbitmq:3-management
+  port: 5672
+  managementPort: 15672
+  username: rmuser
+  password: rmpassword
+  persistentVolume:
+    enabled: true
+    size: 5Gi
+
+service:
+  type: ClusterIP
+  apiPort: 8081
+  grpcPort: 8082
+
+ingress:
+  enabled: true
+  hosts:
+    - host: calendar.local
+      paths:
+        - path: /
+  rabbitmqHost: rabbitmq.local
