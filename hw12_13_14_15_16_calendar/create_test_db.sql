@@ -1,0 +1,1 @@
+create database integration_test_db;

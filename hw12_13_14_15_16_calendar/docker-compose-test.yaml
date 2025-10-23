@@ -1,0 +1,100 @@
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:latest
+    ports:
+      - "9999:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./create_test_db.sql:/docker-entrypoint-initdb.d/create_database.sql
+    environment:
+      - "POSTGRES_PASSWORD=123456"
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_DB=integration_test_db"
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672   # основной AMQP-порт для приложений
+      - 15672:15672 # веб-панель RabbitMQ Management
+    volumes: 
+      - rabbitmq_data_test:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=rmuser # логин по умолчанию
+      - RABBITMQ_DEFAULT_PASS=rmpassword # пароль по умолчанию
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 15s
+
+  calendar:
+    build: 
+      context: .
+      dockerfile: ./build/Dockerfile_calendar
+    ports:
+      - 8081:8081
+    environment:
+      - DBHOST=postgres
+      - DBPORT=5432
+      - DBNAME=integration_test_db
+      - ADDR=0.0.0.0:8081
+      - GRPCADDR=0.0.0.0:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  sender:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile_sender
+    environment:
+      - RURL=amqp://rmuser:rmpassword@rabbitmq:5672
+      - DEBUG=true
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - app_logs:/var/log/
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile_scheduler
+    environment:
+      - DBHOST=postgres
+      - DBPORT=5432
+      - DBNAME=integration_test_db
+      - RURL=amqp://rmuser:rmpassword@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  integration-tests:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile_tests
+    depends_on:
+      calendar:
+        condition: service_started
+      scheduler: 
+        condition: service_started
+      sender:
+        condition: service_started
+    volumes:
+      - app_logs:/var/log/
+
+volumes:
+  postgres_data_test:
+  rabbitmq_data_test:
+  app_logs:

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package event;
+option go_package = "./;api";
+
+import "google/protobuf/timestamp.proto";
+
+message Event {
+  string id = 1;
+  string title = 2;
+  google.protobuf.Timestamp createdAt = 3;
+  google.protobuf.Timestamp start = 4;
+  google.protobuf.Timestamp end = 5;
+  string description = 6;
+  string userID = 7;
+  google.protobuf.Timestamp notification = 8;
+  bool notified = 9; 
+}
+
+message EventCreateDTO {
+  string title = 1;
+  google.protobuf.Timestamp start = 2;
+  google.protobuf.Timestamp end = 3;
+  string description = 4;
+  google.protobuf.Timestamp notification = 5;
+  bool notified = 9; 
+}

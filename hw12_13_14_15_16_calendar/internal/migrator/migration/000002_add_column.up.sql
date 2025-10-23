@@ -1,0 +1,1 @@
+alter table event add column notified boolean default false;

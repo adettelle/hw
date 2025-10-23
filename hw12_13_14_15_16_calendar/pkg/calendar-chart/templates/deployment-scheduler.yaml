@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fullname" . }}-scheduler
+spec:
+  replicas: {{ .Values.scheduler.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "fullname" . }}-scheduler
+  template:
+    metadata:
+      labels:
+        app: {{ include "fullname" . }}-scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: "{{ .Values.scheduler.image.repository }}:{{ .Values.scheduler.image.tag }}"
+          imagePullPolicy: {{ .Values.scheduler.image.pullPolicy }}
+          env:
+            - name: DBHOST
+              value: "{{ .Values.scheduler.env.DBHOST }}"
+            - name: DBPORT
+              value: "{{ .Values.scheduler.env.DBPORT }}"
+            - name: DBNAME
+              value: "{{ .Values.scheduler.env.DBNAME }}"
+            - name: RURL
+              value: "{{ .Values.scheduler.env.RURL }}"

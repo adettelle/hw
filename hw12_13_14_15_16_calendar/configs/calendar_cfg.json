@@ -1,0 +1,12 @@
+{
+    "logger": {
+        "level": "INFO"
+    },
+    "address": "0.0.0.0:8081",
+    "dbhost": "postgres",
+    "dbport": "5432",
+    "dbuser": "postgres",
+    "dbpassword": "123456",
+    "dbname": "test_db",
+    "grpcaddr": "localhost:8082"
+}

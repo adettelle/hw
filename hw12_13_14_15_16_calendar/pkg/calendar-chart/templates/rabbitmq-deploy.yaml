@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "fullname" . }}-rabbit-secret
+type: Opaque
+stringData:
+  RABBITMQ_DEFAULT_USER: {{ .Values.rabbitmq.username | quote }}
+  RABBITMQ_DEFAULT_PASS: {{ .Values.rabbitmq.password | quote }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fullname" . }}-rabbitmq
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "fullname" . }}-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: {{ include "fullname" . }}-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: "{{ .Values.rabbitmq.image }}"
+          ports:
+            - containerPort: {{ .Values.rabbitmq.port }}
+            - containerPort: {{ .Values.rabbitmq.managementPort }}
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fullname" . }}-rabbit-secret
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fullname" . }}-rabbit-secret
+                  key: RABBITMQ_DEFAULT_PASS
+          volumeMounts:
+            - name: rabbitdata
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitdata
+          persistentVolumeClaim:
+            claimName: {{ include "fullname" . }}-rabbitdata
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fullname" . }}-rabbitmq
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ include "fullname" . }}-rabbitmq
+  ports:
+    - port: {{ .Values.rabbitmq.port }}
+      targetPort: {{ .Values.rabbitmq.port }}
+      name: amqp
+    - port: {{ .Values.rabbitmq.managementPort }}
+      targetPort: {{ .Values.rabbitmq.managementPort }}
+      name: management
